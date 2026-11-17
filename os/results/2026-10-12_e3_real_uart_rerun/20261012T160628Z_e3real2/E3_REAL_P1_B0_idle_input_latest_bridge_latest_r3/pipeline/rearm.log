@@ -1,0 +1,1 @@
+sudo -n -u richard -- bash /opt/edge-runtime/osbuild/rearm_via_mac.sh

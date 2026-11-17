@@ -1,0 +1,5 @@
+Independent team source retains its own notices and the root MIT terms.
+This firmware build depends on the GPL-2.0 nucleo-f446re-freertos reference.
+Do not interpret root MIT as a relicensing of that reference or a combined image.
+Treat GPL-derived firmware as GPL-2.0 pending per-file dependency review.
+See ../../../third_party/licenses/GPL-2.0.txt and ../../../third_party/README.md.

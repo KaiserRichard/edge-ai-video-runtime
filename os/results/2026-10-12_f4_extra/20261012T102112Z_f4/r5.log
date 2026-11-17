@@ -1,0 +1,6 @@
+Run command: /opt/edge-runtime/osbuild/tf/tools/experiments/e4_campaign.sh --single F4 --rearm-command /opt/edge-runtime/osbuild/rearm_via_mac.sh /opt/edge-runtime/osbuild/results/20261012T102112Z_f4/r5
+Wall-time estimate: >= 0.1 min measured windows; allow about 2.2 min with startup/rearm/timeouts plus initial build. F5 uses acknowledged SIGUSR1 inference suppression.
+make: Entering directory '/opt/edge-runtime/osbuild/tf/linux'
+make: Nothing to be done for 'all'.
+make: Leaving directory '/opt/edge-runtime/osbuild/tf/linux'
+F4-r01: FAILED: no FRESH STATE_EVENT plus clock fit before startup/recovery deadline

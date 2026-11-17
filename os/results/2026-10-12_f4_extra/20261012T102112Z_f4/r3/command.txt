@@ -1,0 +1,1 @@
+/opt/edge-runtime/osbuild/tf/tools/experiments/e4_campaign.sh --single F4 --rearm-command /opt/edge-runtime/osbuild/rearm_via_mac.sh /opt/edge-runtime/osbuild/results/20261012T102112Z_f4/r3
