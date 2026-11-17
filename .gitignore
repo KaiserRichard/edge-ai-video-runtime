@@ -1,0 +1,117 @@
+# Proposed rules for a future monorepo. Review before applying.
+# Keep raw measurements, their validity flags, and provenance manifests deliberately.
+
+# Local credentials and host configuration; templates may be committed after review.
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+.ssh/
+.aws/
+
+# Local assistant state and private working notes.
+.claude/
+.codex/
+.agents/
+.obsidian/
+/conductor/
+/PROMPT*.txt
+/**/PROMPT*.txt
+/**/run*.log
+/**/WORK_LOG*.md
+/**/prompts/
+AGENTS.md
+CLAUDE.md
+# Public engineering guidance is in docs/ENGINEERING.md.
+# Convert useful ticket/design content to docs before excluding the originals.
+
+# Environments and caches.
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
+.runtime/
+node_modules/
+
+# Build products; source, Makefiles and selected evidence remain tracked.
+**/build/
+**/cmake-cache/
+**/CMakeFiles/
+CMakeCache.txt
+*.o
+*.a
+*.so
+*.dylib
+*.elf
+*.bin
+*.map
+*.d
+*.aux
+*.fdb_latexmk
+*.fls
+*.nav
+*.out
+*.snm
+*.toc
+*.xdv
+*.synctex.gz
+
+# MATLAB caches and reproducible generated output.
+slprj/
+*.slxc
+*.asv
+*.autosave
+*_ert_rtw/
+*_grt_rtw/
+/sim/generated/
+/sim/output/
+# Do not blanket-ignore .slx, .mat, CSV, PNG, PDF or all .log files.
+# Selected validated models and measurement logs need explicit provenance.
+
+# Duplicated local design iterations and bulk browser captures.
+/dashboard/_backup_v*/
+/dashboard/artifacts/
+/dashboard/.runtime/
+/cn/logs/
+/os/scratch/
+# Keep one small, reviewed demo capture under docs/images/.
+
+# Download/build dependencies from pinned URLs and hashes instead of vendoring caches.
+/cn/third_party/ns-3.44/
+# Retain existing licensed submodules only after dependency review.
+
+# Compiler and downloaded application/render bundles.
+**/swift-cache/
+**/.swift-cache/
+**/.swift-module-cache/
+*.pcm
+*.swiftmodule
+**/tools/_build/
+**/PROMPT*.md
+
+# A measurement log named run*.log is still evidence; review its contents explicitly.
+!**/results/**/run*.log
+
+**/cache/
+**/codegen/
+
+/os/third_party/
+
+
+# Raw UART captures are evidence, not compiled firmware.
+!**/results/**/capture/uart.bin
+*.pid

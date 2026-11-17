@@ -1,0 +1,5 @@
+nucleo-f446re-freertos
+commit f588dba3c0b22b0305c7e33d9770dc4db755d395
+
+	path = third_party/nucleo-f446re-freertos
+	url = https://github.com/maherme/nucleo-f446re-freertos.git
