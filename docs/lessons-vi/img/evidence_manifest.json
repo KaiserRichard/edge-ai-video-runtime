@@ -1,0 +1,478 @@
+{
+  "creator": "codex-e",
+  "scope": "Only coursework_lessons written; evidence sources read-only",
+  "figures": [
+    {
+      "file": "img/01_rtp_metadata.png",
+      "lesson": 1,
+      "kind": "measured",
+      "caption": "SOURCE: Sáu gói đầu có chung timestamp; bước timestamp của lần chạy Ethernet sạch dao động quanh 6000 tick.",
+      "sources": [
+        "cn\\rtp\\results\\T3\\loss5\\run1\\receiver.csv",
+        "cn\\rtp\\results\\T2\\eth_q75_640x480_15fps\\run1\\sender.csv"
+      ],
+      "method": "Receiver frame_id=0; modular consecutive sender RTP timestamp differences, T2 run1; no synthetic samples.",
+      "sha256": "3be262efdd6ecfd2682adceef7ba99c8bf98eeac361704d0efafdc17fd97c656"
+    },
+    {
+      "file": "img/02_jitter_time.png",
+      "lesson": 2,
+      "kind": "measured",
+      "caption": "SOURCE: Jitter ghi theo từng gói, đổi từ tick sang ms bằng cách chia 90; hai ô dùng thang tung độ riêng.",
+      "sources": [
+        "cn\\rtp\\results\\T2\\eth_q75_640x480_15fps\\run1\\receiver.csv",
+        "cn\\rtp\\results\\T3\\loss5\\run1\\receiver.csv"
+      ],
+      "method": "All receiver rows; arrival time relative to first packet on the same receiver clock; jitter_ts_units / 90.",
+      "sha256": "a503837d8d0c58983f971c9105874b002a6a59f2e868d0d122642d261d705b59"
+    },
+    {
+      "file": "img/03_playout_tradeoff.png",
+      "lesson": 3,
+      "kind": "measured",
+      "caption": "SOURCE: CN-T4, trung bình của 5 lần chạy mỗi điểm; chỉ có bảng tổng hợp, chưa có CSV gốc T4.",
+      "sources": [
+        "cn\\rtp\\report\\hw_tables.md"
+      ],
+      "method": "CN-T4 Late * 100 and Capture→AI P50 (ms) from hw_tables; no invented variability.",
+      "sha256": "ae20a2a7f3e0a727d2283e7864a3d6e9e7bc57e02b1be4e5c043f190278c46c2"
+    },
+    {
+      "file": "img/04_rtcp_loss.png",
+      "lesson": 4,
+      "kind": "measured",
+      "caption": "SOURCE: Loss tổng hợp RR và sequence gần cấu hình netem; loss từng khoảng RR trong run1 vẫn dao động và khác mẫu số với loss toàn lần chạy.",
+      "sources": [
+        "cn\\rtp\\report\\hw_tables.md",
+        "cn\\rtp\\results\\T3\\loss5\\run1\\receiver_rtcp.csv"
+      ],
+      "method": "Table losses versus configured independent loss; raw interval RR 100*fraction_lost/256, only populated RR rows.",
+      "sha256": "41632b306e01d722631fe511e27e54ca537bcac084155aa2763e84bc0a99475d"
+    },
+    {
+      "file": "img/05_netem_frame_loss.png",
+      "lesson": 5,
+      "kind": "measured",
+      "caption": "SOURCE: CN-T3/T5, 5 lần chạy mỗi cấu hình; các cột đều là số đo tổng hợp, payload 3000 byte bị IP chia thành ba mảnh.",
+      "sources": [
+        "cn\\rtp\\report\\hw_tables.md"
+      ],
+      "method": "Table Sequence loss and Frame loss multiplied by 100; no formula values plotted as measured.",
+      "sha256": "e6954b06fce93407a4a85edadb3140433619dc81e0ba673e392d79004b61b4a8"
+    },
+    {
+      "file": "img/06_quality_bitrate.png",
+      "lesson": 6,
+      "kind": "measured",
+      "caption": "SOURCE: Đã đo bitrate theo quality và phân bố kích thước gói nhận ở q30/run1; chưa có bằng chứng phần cứng cho đáp ứng ABR CN-T8.",
+      "sources": [
+        "cn\\rtp\\report\\hw_tables.md",
+        "cn\\rtp\\results\\T5\\q30\\run1\\receiver.csv"
+      ],
+      "method": "Measured sender bitrate from CN-T5 summary; raw receiver packet sizes; sender.csv absent for q30; no ABR curve synthesized.",
+      "sha256": "b534680f6f78a85bcb369de90479c083fc79f4aefd70a18483a825af2ee781a6"
+    },
+    {
+      "file": "img/07_fifo_latest.png",
+      "lesson": 7,
+      "kind": "measured",
+      "caption": "SOURCE: CN-T7, 5 lần chạy mỗi chính sách; dữ liệu gốc T7 chưa tìm thấy, hình chỉ dùng trung bình trong hw_tables.md.",
+      "sources": [
+        "cn\\rtp\\report\\hw_tables.md"
+      ],
+      "method": "CN-T7 summary time-average age converted s→ms and queue P50 read separately; no fabricated AoI time series.",
+      "sha256": "37107cc4dc30391fa8b52c2ff099bab1993f1a2487132b59caaf3409bd086ad8"
+    },
+    {
+      "file": "img/08_contention_summary.png",
+      "lesson": 8,
+      "kind": "measured",
+      "caption": "SOURCE: E2, trung vị P50/P99 qua 3 lần chạy hợp lệ; service gồm chờ đầu vào và xử lý, liên kết pty, không phải UART/MCU.",
+      "sources": [
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\summary\\E2_per_condition.csv"
+      ],
+      "method": "E2_per_condition service_p50_ms/service_p99_ms, exact profile and stressor keys; no missing CPU-P1 condition invented.",
+      "sha256": "45b1372810c5f0d305f584eb953b2b4f8474d09ee925b2ea6a3927397abe8c70"
+    },
+    {
+      "file": "img/08_service_histogram.png",
+      "lesson": 8,
+      "kind": "measured",
+      "caption": "SOURCE: CSV infer của E2 P0/P1, r1–r3 hợp lệ; lấy t_done − t_input trên cùng đồng hồ, gộp frame để vẽ histogram; đây là service, gồm cả chờ đầu vào.",
+      "sources": [
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r1\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r1\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r2\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r2\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r3\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r3\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r1\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r1\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r2\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r2\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r3\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r3\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r1\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r1\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r2\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r2\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r3\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r3\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r1\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r1\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r2\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r2\\pipeline\\summary.json",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r3\\pipeline\\infer.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r3\\pipeline\\summary.json"
+      ],
+      "method": "Only valid summary.json; sent frame service=(t_done_ns-t_input_ns)/1e6; 10ms bins 0–750ms; pooled counts {\"P0_B0_idle\": 2700, \"P0_B2_memrate_c23\": 1641, \"P1_B0_idle\": 2701, \"P1_B2_memrate_c23\": 1523}",
+      "sha256": "24571887ae341617603c6ab9e0470f94a38a9d758ef5ef01ce9d22f7bb7cd3af"
+    },
+    {
+      "file": "img/09_input_policy_aoi.png",
+      "lesson": 9,
+      "kind": "measured",
+      "caption": "SOURCE: E3B idle, bridge=latest, 3 lần chạy hợp lệ mỗi chính sách; AoI trung bình là trung vị qua lần chạy, AoI đỉnh là cực đại; pty, không phải MCU.",
+      "sources": [
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\summary\\E3B_per_condition.csv"
+      ],
+      "method": "E3B_per_condition exact idle/input_policy keys; summary scalars with source-defined median vs maximum semantics.",
+      "sha256": "59fc119690d04d87b86180ba364764719f8ba81127c5a5aaf93a13cb577248ad"
+    },
+    {
+      "file": "img/09_measured_sawtooth.png",
+      "lesson": 9,
+      "kind": "measured",
+      "caption": "SOURCE: E3B idle r1, chỉ bản tin CRC hợp lệ; tuổi tăng giữa hai lần nhận và giảm theo capture mới nhất, cửa sổ 1 s được nêu rõ; dữ liệu pty.",
+      "sources": [
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_fifo_r1\\pipeline\\rx.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_fifo_r1\\pipeline\\window_start_ns",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_latest_r1\\pipeline\\rx.csv",
+        "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_latest_r1\\pipeline\\window_start_ns"
+      ],
+      "method": "Reconstruct freshest held capture from CRC-valid rx with t_input_ns and t_rx_ns on the same RAW clock; explicit [window_start+10s,+11s] interval, no synthesized events.",
+      "sha256": "59e0a3b75e71dc46ef96b1525bb3747efeaf7b54bfab9a77416764f381ac1314"
+    },
+    {
+      "file": "img/10_f5_measured.png",
+      "lesson": 10,
+      "kind": "measured",
+      "caption": "SOURCE: 5 log F5; HOLD khoảng 175 ms và FAILSAFE khoảng 475 ms sau kết quả cuối, heartbeat tại HOLD chỉ khoảng 18 ms tuổi; thời gian trạng thái MCU, chưa đo chân LED.",
+      "sources": [
+        "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r1\\F5-r01\\pipeline\\state_events.csv",
+        "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r2\\F5-r01\\pipeline\\state_events.csv",
+        "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r3\\F5-r01\\pipeline\\state_events.csv",
+        "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r4\\F5-r01\\pipeline\\state_events.csv",
+        "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r5\\F5-r01\\pipeline\\state_events.csv"
+      ],
+      "method": "MCU-local reason 9/10 transition time minus last_inf_mcu_us; heartbeat age at reason 9 uses last_hb_mcu_us. Different references are not combined.",
+      "sha256": "ca1988b42ee88188062a00ad4747264176cebbd3d648e76521107e218a3c4abb"
+    },
+    {
+      "file": "img/10_sim_healthy_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Bản tin đều đặn giữ supervisor ở trạng thái FRESH.",
+      "sources": [
+        "sim\\os_supervisor\\output\\healthy_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "edc94c4199309d13191d6f04dc3d1ff93a0b0bed0ad2ee7e85e6a0c021c2734e"
+    },
+    {
+      "file": "img/10_sim_single_missed_heartbeat_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Bỏ một heartbeat vẫn chưa vượt ngưỡng timeout.",
+      "sources": [
+        "sim\\os_supervisor\\output\\single_missed_heartbeat_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "02ae4acb2e840092d00046e3fa097d7b98c7c85e1cd57bedbd55da113ff1894e"
+    },
+    {
+      "file": "img/10_sim_late_within_timeout_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Heartbeat đến muộn trong giới hạn vẫn giữ trạng thái FRESH.",
+      "sources": [
+        "sim\\os_supervisor\\output\\late_within_timeout_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "b848291c36090bfd1fdb9f2d2e766c3090ae23373fbed5bb481406f7bc07193c"
+    },
+    {
+      "file": "img/10_sim_missed_heartbeat_recovery_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Mất heartbeat gây FAILSAFE; phục hồi cần thao tác rearm.",
+      "sources": [
+        "sim\\os_supervisor\\output\\missed_heartbeat_recovery_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "72a20249ffcbaea319884b2b8bfcda8165f28a0ca8fc6f8f6b02731769afa2d3"
+    },
+    {
+      "file": "img/10_sim_late_heartbeat_at_deadline_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Heartbeat đến sát deadline kiểm tra đúng biên timeout.",
+      "sources": [
+        "sim\\os_supervisor\\output\\late_heartbeat_at_deadline_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "7cc4ff39e4c5979dc79ca5a5456754ddb208dabce801378ee9db096bb91cb95c"
+    },
+    {
+      "file": "img/10_sim_degrade_and_recover_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Kết quả cũ đưa hệ thống vào HOLD rồi phục hồi khi có kết quả tươi.",
+      "sources": [
+        "sim\\os_supervisor\\output\\degrade_and_recover_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "9747758a15e206415a66cb2d06b7adc92f5104ae051b824cca7db07512e06497"
+    },
+    {
+      "file": "img/10_sim_stale_result_failsafe_rearm_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Heartbeat còn sống nhưng kết quả cũ vẫn gây FAILSAFE, sau đó rearm.",
+      "sources": [
+        "sim\\os_supervisor\\output\\stale_result_failsafe_rearm_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "d592b95ada275670db1f3fae80d39234eb9e0a4c4243d9ef185e054b2aecef21"
+    },
+    {
+      "file": "img/10_sim_heartbeat_priority_timeline.png",
+      "lesson": 10,
+      "kind": "simulation",
+      "caption": "MÔ PHỎNG: Khi hai điều kiện lỗi cùng xuất hiện, timeout heartbeat được ưu tiên.",
+      "sources": [
+        "sim\\os_supervisor\\output\\heartbeat_priority_timeline.png"
+      ],
+      "method": "Exact byte-for-byte copy from os_supervisor output, not coursework_sim and not hardware measurement.",
+      "sha256": "098bc84a8fec89c579f84d4b435daf3a22f796996c9df39722305fca5a308499"
+    }
+  ],
+  "sources": {
+    "cn\\rtp\\report\\hw_tables.md": {
+      "sha256": "5dff6b47d73e2dfd7b12f1397f568348fdb9364a236a0be7872647e8e2249900",
+      "bytes": 7121
+    },
+    "cn\\rtp\\results\\T3\\loss5\\run1\\receiver.csv": {
+      "sha256": "65a26ac65b88c5fb9be1c94334171ee3fdb68db1b43f3552bdf39fce0c9dec1f",
+      "bytes": 361705
+    },
+    "cn\\rtp\\results\\T2\\eth_q75_640x480_15fps\\run1\\sender.csv": {
+      "sha256": "8f197a5754a385c3c8ba69142aa8be26dcaf9cba1533ca8d9d64743270b41800",
+      "bytes": 73523
+    },
+    "cn\\rtp\\results\\T2\\eth_q75_640x480_15fps\\run1\\receiver.csv": {
+      "sha256": "bb9818f97dee90cfdb423edb06802bd748dc9ff8ac69aa9398919fb1e46a9f01",
+      "bytes": 450637
+    },
+    "cn\\rtp\\results\\T3\\loss5\\run1\\receiver_rtcp.csv": {
+      "sha256": "407b5f0c714ff888f50d99498434a27f39c7737852ce3a8e94bb3e3590bb4033",
+      "bytes": 109388
+    },
+    "cn\\rtp\\results\\T5\\q30\\run1\\receiver.csv": {
+      "sha256": "17a089680576a38b298f0088645cea1aef0a83d00ead3b496b01815a0026efa1",
+      "bytes": 105676
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\summary\\E2_per_condition.csv": {
+      "sha256": "a3eacdbb34cbf567dcbd50f3ae0be54b1cddbc7550447d9fadb25b12b2e75e4d",
+      "bytes": 2996
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r1\\pipeline\\summary.json": {
+      "sha256": "4128f5aed4bda51af558b092b32ef5b340d1dbaa6ff9e54fc7414a29da2d6ff8",
+      "bytes": 1490
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r1\\pipeline\\infer.csv": {
+      "sha256": "0ae09e8eb277bfd7ea7a25901e875096021f7f21b74dc2c73edc9c8493480235",
+      "bytes": 35928
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r2\\pipeline\\summary.json": {
+      "sha256": "633e896f9eb0206f2777be32c22ea5d999bd213fdb0aff47e3bbf43cd15b8f74",
+      "bytes": 1492
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r2\\pipeline\\infer.csv": {
+      "sha256": "9334e9f752302e0f0abe6206a8b769904ef21e7d55886455e0aaea7adc6baeb3",
+      "bytes": 35928
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r3\\pipeline\\summary.json": {
+      "sha256": "acf36eeae1bcda0068aea38dad0313003a9012042e8b5a72bd8317470c83138d",
+      "bytes": 1492
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B0_idle_latest_r3\\pipeline\\infer.csv": {
+      "sha256": "9daf09289856471dbc8d07a09ecb7739c2300ab7dffdef272fff48ea567bd763",
+      "bytes": 35928
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r1\\pipeline\\summary.json": {
+      "sha256": "48cdb9c469c92e2002f74adfe66c10cfbf71f3242e6b43b16eadd837c1a6ffb7",
+      "bytes": 1513
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r1\\pipeline\\infer.csv": {
+      "sha256": "4eb9fc8cc7104dd779263001e742f2e88b92ccaaecb811e6a7ae4ed4cba080bc",
+      "bytes": 33521
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r2\\pipeline\\summary.json": {
+      "sha256": "a2e01d15793aeed37b7c6ea644db4c3f785284fb9ee92c60a661ccc0302174e1",
+      "bytes": 1515
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r2\\pipeline\\infer.csv": {
+      "sha256": "c4dc8c76d2ccdc96e843a7b492910398322ad14aea82e4eca7f04d71a67cb051",
+      "bytes": 33448
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r3\\pipeline\\summary.json": {
+      "sha256": "002611336794f3297a521d56a13f9809ef5f9f15df218f4f16bb6b6ad5f964c0",
+      "bytes": 1512
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P0_B2_memrate_c23_latest_r3\\pipeline\\infer.csv": {
+      "sha256": "2255bfe2895d8043ff15a3111ce5c63a94cfd0b2133e6e926f30dc743f0559ce",
+      "bytes": 33236
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r1\\pipeline\\summary.json": {
+      "sha256": "98af1edfde429061b0f1b60d1bc8d78f4f85de4cb928a6bd3e2352495f0a7f96",
+      "bytes": 1493
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r1\\pipeline\\infer.csv": {
+      "sha256": "dcc7ee97ce31ca8b5eacd2840e49412932fcb10bc170704a3f61df291ce4ace7",
+      "bytes": 35928
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r2\\pipeline\\summary.json": {
+      "sha256": "3c2eef545793df753a9a14b2524adbe67c7a583fe5b5f1799d9ea01862c5ea36",
+      "bytes": 1494
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r2\\pipeline\\infer.csv": {
+      "sha256": "310f59384e2810256f53a895cd960fb501d0ac8cca47045b17a807ef34126d2b",
+      "bytes": 35928
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r3\\pipeline\\summary.json": {
+      "sha256": "a958c848a354ac660d428d4c80e397bf9186e91b8127101120c5b571b4ef0a62",
+      "bytes": 1492
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B0_idle_latest_r3\\pipeline\\infer.csv": {
+      "sha256": "e2fce4ca994a8e9931e5f0ec66ad82de977ec377d55b519ca4b7e4d5058d5592",
+      "bytes": 35968
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r1\\pipeline\\summary.json": {
+      "sha256": "4b0e5d22a24e47ff2a69b7f2049d2ec0a6849368d6b5617b90fd0973218dddeb",
+      "bytes": 1510
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r1\\pipeline\\infer.csv": {
+      "sha256": "76c85f227e48ffbb27ef68c1f3737ffa47b0cd9b9a32b2d2a5fbcc35bdb911ef",
+      "bytes": 33218
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r2\\pipeline\\summary.json": {
+      "sha256": "ec28526b03f937b29ac82704aecd0a88671b0a5a368664facc2aad6a84e20ebf",
+      "bytes": 1513
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r2\\pipeline\\infer.csv": {
+      "sha256": "bcb796660dd5c2c9311e507fd36c20725ea2702dcc46d81a977956b6826347b6",
+      "bytes": 33341
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r3\\pipeline\\summary.json": {
+      "sha256": "c389dd8920babb63fc7c402a4ef16c4272369795413e9bdd36ce27426d5693b0",
+      "bytes": 1514
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t3_contention\\E2_P1_B2_memrate_c23_latest_r3\\pipeline\\infer.csv": {
+      "sha256": "5c8969cb8412216fcca72ebb76d98996ba822c70cc4d63e1f61b6eecbe645e49",
+      "bytes": 33191
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\summary\\E3B_per_condition.csv": {
+      "sha256": "93439f080fb15fdb889a4eb09ca047b883f7e46896e67c46afa3eedbddb66bdb",
+      "bytes": 2283
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_fifo_r1\\pipeline\\rx.csv": {
+      "sha256": "3d9579ba50dad42d1baaf97e3a3b015dcc8e18573d48f000e2adc1e8a5e9bd9d",
+      "bytes": 257027
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_fifo_r1\\pipeline\\window_start_ns": {
+      "sha256": "91672ad1ea82f895b25503be4686a56cbe18c0cd51352b00a87431d8e6a22dba",
+      "bytes": 15
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_latest_r1\\pipeline\\rx.csv": {
+      "sha256": "6eeafee06f678cdb93e2a994393acdc7f206b92e7f02222a034dd4fa883a1175",
+      "bytes": 253106
+    },
+    "docs/os-report\\report_vi\\pi_results\\2026-10-30_os_t4_policy\\E3B_P1_B0_idle_latest_r1\\pipeline\\window_start_ns": {
+      "sha256": "ac05290eb053ac2600490e805bfff15aa56f14ce0fb44cc0edb11a2f72a7db65",
+      "bytes": 15
+    },
+    "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r1\\F5-r01\\pipeline\\state_events.csv": {
+      "sha256": "66dbc297238dee70d4e064bea701d57dbe866c9deeb2b34739e68509270a778d",
+      "bytes": 284
+    },
+    "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r2\\F5-r01\\pipeline\\state_events.csv": {
+      "sha256": "7400cfa03917618c62f6454e9e29e6e2e5739e570ce087bca7d9f33db54bdaa7",
+      "bytes": 287
+    },
+    "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r3\\F5-r01\\pipeline\\state_events.csv": {
+      "sha256": "f57c0af14599da42164e763cbcd68488460becb937fbb092c4c330c79c833f6a",
+      "bytes": 284
+    },
+    "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r4\\F5-r01\\pipeline\\state_events.csv": {
+      "sha256": "310473b892b6e191969d19b6a50a17432b5851edf87d31dbd13a601229868370",
+      "bytes": 287
+    },
+    "docs/os-report\\results\\2026-10-12_f5_stale\\20261012T101949Z_f5\\r5\\F5-r01\\pipeline\\state_events.csv": {
+      "sha256": "9eb04727c2d57cafa5a3eba0549f96942aed0193ee6434ec08d0e09f00048692",
+      "bytes": 287
+    },
+    "sim\\os_supervisor\\output\\healthy_timeline.png": {
+      "sha256": "edc94c4199309d13191d6f04dc3d1ff93a0b0bed0ad2ee7e85e6a0c021c2734e",
+      "bytes": 85703
+    },
+    "sim\\os_supervisor\\output\\single_missed_heartbeat_timeline.png": {
+      "sha256": "02ae4acb2e840092d00046e3fa097d7b98c7c85e1cd57bedbd55da113ff1894e",
+      "bytes": 93095
+    },
+    "sim\\os_supervisor\\output\\late_within_timeout_timeline.png": {
+      "sha256": "b848291c36090bfd1fdb9f2d2e766c3090ae23373fbed5bb481406f7bc07193c",
+      "bytes": 98004
+    },
+    "sim\\os_supervisor\\output\\missed_heartbeat_recovery_timeline.png": {
+      "sha256": "72a20249ffcbaea319884b2b8bfcda8165f28a0ca8fc6f8f6b02731769afa2d3",
+      "bytes": 115388
+    },
+    "sim\\os_supervisor\\output\\late_heartbeat_at_deadline_timeline.png": {
+      "sha256": "7cc4ff39e4c5979dc79ca5a5456754ddb208dabce801378ee9db096bb91cb95c",
+      "bytes": 110895
+    },
+    "sim\\os_supervisor\\output\\degrade_and_recover_timeline.png": {
+      "sha256": "9747758a15e206415a66cb2d06b7adc92f5104ae051b824cca7db07512e06497",
+      "bytes": 99554
+    },
+    "sim\\os_supervisor\\output\\stale_result_failsafe_rearm_timeline.png": {
+      "sha256": "d592b95ada275670db1f3fae80d39234eb9e0a4c4243d9ef185e054b2aecef21",
+      "bytes": 114756
+    },
+    "sim\\os_supervisor\\output\\heartbeat_priority_timeline.png": {
+      "sha256": "098bc84a8fec89c579f84d4b435daf3a22f796996c9df39722305fca5a308499",
+      "bytes": 90918
+    }
+  },
+  "missing_evidence": [
+    "Bài 06: CN-T8 closed-loop ABR hardware run absent (only quality knob measured).",
+    "Bài 03 và 07: raw CN-T4/CN-T7 runs absent; measured summary tables used.",
+    "Bài 08–09: pty software-clock evidence does not establish physical UART/MCU timing.",
+    "Bài 10: LED/GPIO external timing and camera-pipeline faults absent.",
+    "Bài 01–10: referenced MATLAB coursework_sim figures remain missing; FIGURE PENDING preserved."
+  ],
+  "original_markdown_sha256": {
+    "01_CN_rtp_header.md": "5670d1c44b969cd5165ebbe43dbe5e8854fb9a34ca3b794fcccd69303e038789",
+    "02_CN_rfc3550_jitter.md": "190f12f884b8faab8756edb80f350c66a5fbc97d908b3a0fbc8e43b8f9311988",
+    "03_CN_playout_buffer.md": "782a08ceb856369085cdd911d73b2b9231da8f79399603b35dfdf003ef4ee130",
+    "04_CN_rtcp_receiver_report.md": "9fae573c2c303298bf7babe185f5b17817073738af2920fbeb03c78701c526ed",
+    "05_CN_netem_experiments.md": "dac533fbacbcf7f592708558bce193fd1af83963ee3244a03b483d9a3ade90f4",
+    "06_CN_bitrate_adaptation.md": "d753cce670cba3efe49afd474cb20007b965d2d9c4a785035e61d91fe06e9805",
+    "07_CN_fifo_vs_latest_value.md": "36edb35cd0e7f1fe3bc1bd245206f8e941b6fa8a16cfc09d8760bbd5d3a0aa0e",
+    "08_OS_scheduling_and_contention.md": "f2fbcb04db0604bebd18a78aafdae56e32b80872f4783fbc64bbe0fc3abbbb8a",
+    "09_OS_age_of_information.md": "ec78aaeb665216c93eadab83d00705a19a7d5dc87881d2f575a205e588dd5c45",
+    "10_OS_freertos_supervisor.md": "2e76515052db93821e3005cb3badadcbe2603829d273ed57303ed56a05867a9a",
+    "INDEX.md": "3082f68ace6bb7e233884e62be7ca93588bc16a39bca2c1754b1b5126f073dac"
+  }
+}
