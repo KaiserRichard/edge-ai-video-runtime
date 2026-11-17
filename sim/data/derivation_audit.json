@@ -1,0 +1,20 @@
+{
+  "execution": "JavaScript source conversion checks only; no MATLAB",
+  "checks": [
+    {
+      "file": "data/os_idle_samples.csv",
+      "count": 3000,
+      "maximum_error_seconds": 0
+    },
+    {
+      "file": "data/os_cpu23_samples.csv",
+      "count": 3000,
+      "maximum_error_seconds": 0
+    },
+    {
+      "file": "data/os_memory_samples.csv",
+      "count": 490,
+      "maximum_error_seconds": 0
+    }
+  ]
+}

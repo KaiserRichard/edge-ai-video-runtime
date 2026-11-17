@@ -1,0 +1,89 @@
+[
+  {
+    "source": "cn/rtp/report/hw_tables.md",
+    "snapshot": "data/source/cn_hw_tables.md",
+    "sha256": "5dff6b47d73e2dfd7b12f1397f568348fdb9364a236a0be7872647e8e2249900"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/SUMMARY.md",
+    "snapshot": "data/source/os_inference_summary.md",
+    "sha256": "e520b5a91d1530ef5008c09d626aebe0062f7699c91b0102e1e8a16248bf5472"
+  },
+  {
+    "source": "docs/os-report/stm32/src/supervisor.c",
+    "snapshot": "data/source/supervisor_reference.c",
+    "sha256": "6d7e7578b188ea5c9b7c86a6c91770d29a0b95a5e01a9be4baec9e993c49c2ec"
+  },
+  {
+    "source": "docs/os-report/stm32/firmware/main.c",
+    "snapshot": "data/source/firmware_reference.c",
+    "sha256": "93440df3166370ffb1fa3ad3e8fb64c07083655c515f0db8c26a38ac19b15b00"
+  },
+  {
+    "source": "os/results/2026-10-30_os_t4_policy/summary/E3B_per_condition.csv",
+    "snapshot": "data/source/os_t4_conditions.csv",
+    "sha256": "93439f080fb15fdb889a4eb09ca047b883f7e46896e67c46afa3eedbddb66bdb"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/idle_r1/threads-1/bench/samples.csv",
+    "sha256": "c6b7b2c515bae3c540d8ead9cf044cc64b7ff6a37d273b5abe281c1245cc0c40",
+    "derived": "data/os_idle_samples.csv",
+    "rule": "(pre_ns + infer_ns)/1e9; all 3 one-thread repetitions valid per SUMMARY"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/idle_r2/threads-1/bench/samples.csv",
+    "sha256": "6bcb303bf2b7fe6a0ee53a5c149b907d793e938a3d7e5bfcae8aeb463cc9d48e",
+    "derived": "data/os_idle_samples.csv",
+    "rule": "(pre_ns + infer_ns)/1e9; all 3 one-thread repetitions valid per SUMMARY"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/idle_r3/threads-1/bench/samples.csv",
+    "sha256": "389ec40497d4c800e4a15f6e83fc4ba20bf4eff07167b0768144e9989bb45c0c",
+    "derived": "data/os_idle_samples.csv",
+    "rule": "(pre_ns + infer_ns)/1e9; all 3 one-thread repetitions valid per SUMMARY"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/cpu23_r1/threads-1/bench/samples.csv",
+    "sha256": "7c4844093b44938b817b09f10083f0affa912335ba1cfbb111be29d8817cd79a",
+    "derived": "data/os_cpu23_samples.csv",
+    "rule": "(pre_ns + infer_ns)/1e9; all 3 one-thread repetitions valid per SUMMARY"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/cpu23_r2/threads-1/bench/samples.csv",
+    "sha256": "d0018d197bf705a224f7af1b2ee6dc7a9cc69ebd42db531eb99eaa1824130814",
+    "derived": "data/os_cpu23_samples.csv",
+    "rule": "(pre_ns + infer_ns)/1e9; all 3 one-thread repetitions valid per SUMMARY"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-11_inference_baseline/cpu23_r3/threads-1/bench/samples.csv",
+    "sha256": "47947373b6747358ab65a158aaeb62b6713ab6624181e0b69482314b6e5597b5",
+    "derived": "data/os_cpu23_samples.csv",
+    "rule": "(pre_ns + infer_ns)/1e9; all 3 one-thread repetitions valid per SUMMARY"
+  },
+  {
+    "source": "os/results/2026-10-30_os_t3_contention/E1_P0_B2_memrate_c23_latest_r1/pipeline/infer.csv",
+    "sha256": "53c6cbbf1ed499e445f9c7f24de5187e95744b34c51fe48c746d4cf8d892ea73",
+    "derived": "data/os_memory_samples.csv",
+    "rule": "Filter status=sent and t_done_ns>0; successive t_done_ns/1e9 differences: inferred saturated effective service, not isolated ONNX latency; P0 only"
+  },
+  {
+    "source": "os/results/2026-10-30_os_t4_policy/E3B_P1_B0_idle_latest_r1/pipeline/bridge.csv",
+    "snapshot": "data/source/os_measured_bridge.csv",
+    "sha256": "cf747b53d9426d1cf69e71fd3d8f16d64c067ab80f7c756b5d3c283ff45c4428"
+  },
+  {
+    "source": "docs/os-report/docs/STAGE_REPORT.md",
+    "snapshot": "data/source/os_stage_report.md",
+    "sha256": "eed0cb189dd57479bbddd65f3d06a98779789ed58c2ca8deeea8687620d5586f"
+  },
+  {
+    "source": "docs/os-report/results/README.md",
+    "snapshot": "data/source/os_results_readme.md",
+    "sha256": "d07529c52a5a48be1ad1553a1c0431ce772f59e42cccc8c89421bd9c80c11755"
+  },
+  {
+    "source": "docs/os-report/results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv",
+    "snapshot": "data/source/os_fault_runs.csv",
+    "sha256": "4a8cb0eeb9f6920a431b2e8c79559ce65b5ec2d830467b450faec9d2d5b1edb7"
+  }
+]

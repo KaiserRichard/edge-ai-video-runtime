@@ -1,0 +1,171 @@
+{
+  "updated_at": "2026-11-16T18:17:04.625836+07:00",
+  "status": "all eight actual Stateflow scenarios passed",
+  "model": "codex_e_os_supervisor.slx",
+  "test_results": "output/test_results.json",
+  "passed": [
+    {
+      "scenario": "healthy",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1
+      ],
+      "heartbeat_delay_ms": null,
+      "hold_delay_ms": null,
+      "source_failsafe_delay_ms": null
+    },
+    {
+      "scenario": "single_missed_heartbeat",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1
+      ],
+      "heartbeat_delay_ms": null,
+      "hold_delay_ms": null,
+      "source_failsafe_delay_ms": null
+    },
+    {
+      "scenario": "late_within_timeout",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1
+      ],
+      "heartbeat_delay_ms": null,
+      "hold_delay_ms": null,
+      "source_failsafe_delay_ms": null
+    },
+    {
+      "scenario": "missed_heartbeat_recovery",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1,
+        3,
+        0,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1,
+        301,
+        1701,
+        1751
+      ],
+      "heartbeat_delay_ms": 100.75,
+      "hold_delay_ms": null,
+      "source_failsafe_delay_ms": null
+    },
+    {
+      "scenario": "late_heartbeat_at_deadline",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1,
+        3,
+        0,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1,
+        301,
+        1301,
+        1351
+      ],
+      "heartbeat_delay_ms": 100.75,
+      "hold_delay_ms": null,
+      "source_failsafe_delay_ms": null
+    },
+    {
+      "scenario": "degrade_and_recover",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1,
+        326,
+        451
+      ],
+      "heartbeat_delay_ms": null,
+      "hold_delay_ms": 175.75,
+      "source_failsafe_delay_ms": null
+    },
+    {
+      "scenario": "stale_result_failsafe_rearm",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1,
+        2,
+        3,
+        0,
+        1
+      ],
+      "transition_ms": [
+        0,
+        1,
+        326,
+        626,
+        1701,
+        1751
+      ],
+      "heartbeat_delay_ms": null,
+      "hold_delay_ms": 175.75,
+      "source_failsafe_delay_ms": 475.75
+    },
+    {
+      "scenario": "heartbeat_priority",
+      "passed": true,
+      "state_sequence": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transition_ms": [
+        0,
+        1,
+        326,
+        626
+      ],
+      "heartbeat_delay_ms": 100,
+      "hold_delay_ms": 175.75,
+      "source_failsafe_delay_ms": null
+    }
+  ],
+  "not_run": [
+    "MATLAB unit-test wrapper (direct full harness ran instead)",
+    "hardware/logic analyzer (outside this software task)"
+  ],
+  "figures_saved": 8,
+  "plot_format_refresh": "pending RAM gate; original eight actual plots already saved",
+  "sha256": {
+    "build_os_supervisor.m": "cff46a14afc38fdf0653ca8ec3c8c382ebdbcbf067a6376ad6d4598325b06117",
+    "run_os_supervisor_tests.m": "480f6ce1a7fa52200ac3788c51b606b388dbd3cf849578a4a356bfa1dfde27cd",
+    "os_supervisor_scenarios.m": "a93310266b1a1bad85a5a9d519fb657977344a7994605eed0281edf7c4bee5c2",
+    "test_os_supervisor.m": "38c6603190bc3dbf0c0c5acf71440e9bc365bfb27349cb8b0266421f35d6287f",
+    "plot_os_supervisor_timeline.m": "a2fbf001fe23b1feafea76ebacbc7e4063941aa07f8181ca57cbf6f7095ad15a",
+    "export_os_supervisor_timelines.m": "8cb6f41c259c32f228c72f0c5bbfe321ea965c918f6e85a5929bb171b10d2fa2",
+    "codex_e_os_supervisor.slx": "ee8eac4617850f75b859630e6cf14b98bedef09547f06c640a6fc2cf83abd0a8"
+  }
+}

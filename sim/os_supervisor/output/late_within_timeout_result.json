@@ -1,0 +1,15 @@
+{
+  "scenario": "late_within_timeout",
+  "passed": true,
+  "state_sequence": [
+    0,
+    1
+  ],
+  "transition_ms": [
+    0,
+    1
+  ],
+  "heartbeat_delay_ms": null,
+  "hold_delay_ms": null,
+  "source_failsafe_delay_ms": null
+}

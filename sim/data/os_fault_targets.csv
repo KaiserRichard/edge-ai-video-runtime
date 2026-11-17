@@ -1,0 +1,10 @@
+fault,state,reason,reference,local_p50_ms,fault_p50_ms,accepted_runs,evidence
+F1,2,9,last_inference,175.317,83.342,5,Corrected STAGE_REPORT; MCU state timing only
+F1,3,3,last_heartbeat,100.456,85.357,5,Corrected STAGE_REPORT; MCU state timing only
+F2,2,9,last_inference,175.206,83.151,5,Corrected STAGE_REPORT; MCU state timing only
+F2,3,3,last_heartbeat,100.577,85.715,5,Corrected STAGE_REPORT; MCU state timing only
+F3,2,9,last_inference,175.754,83.646,5,Corrected STAGE_REPORT; MCU state timing only
+F3,3,10,last_inference,475.754,383.620,5,Corrected STAGE_REPORT; MCU state timing only
+F4,3,3,last_heartbeat,100.556,87.277,7,Corrected STAGE_REPORT; 7 of 14 attempts; extras short-window only
+F5,2,9,last_inference,175.596,83.608,5,Corrected STAGE_REPORT; short-window stale-result campaign
+F5,3,10,last_inference,475.596,383.603,5,Corrected STAGE_REPORT; short-window stale-result campaign
