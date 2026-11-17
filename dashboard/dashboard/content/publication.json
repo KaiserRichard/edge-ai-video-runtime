@@ -1,0 +1,177 @@
+[
+  {
+    "file": "vi/01_CN_rtp_header.md",
+    "source": "docs/lessons-vi/01_CN_rtp_header.md",
+    "sha256": "3105d8bf4f73396ef997240ec3a3b6bccf20bd44123e06730bc38f0a35aebb7c"
+  },
+  {
+    "file": "vi/02_CN_rfc3550_jitter.md",
+    "source": "docs/lessons-vi/02_CN_rfc3550_jitter.md",
+    "sha256": "ff95306fb8d688eb40ceea9c661aeb28cc1f1c74d71ba7d0e0fbee5927fc8812"
+  },
+  {
+    "file": "vi/03_CN_playout_buffer.md",
+    "source": "docs/lessons-vi/03_CN_playout_buffer.md",
+    "sha256": "36f3008d7a54230c86281e67f38201cda45f9cb733fb6af6a629cbe4bd94f2ad"
+  },
+  {
+    "file": "vi/04_CN_rtcp_receiver_report.md",
+    "source": "docs/lessons-vi/04_CN_rtcp_receiver_report.md",
+    "sha256": "972ceb6fe86ef365fc38cc6a4fb58ec03c18ab1380e978610499e152a7119ae9"
+  },
+  {
+    "file": "vi/05_CN_netem_experiments.md",
+    "source": "docs/lessons-vi/05_CN_netem_experiments.md",
+    "sha256": "d9a152d76198316201cad5a932bf9f630e8de4fb598f1e1c6cffdb93a032076a"
+  },
+  {
+    "file": "vi/06_CN_bitrate_adaptation.md",
+    "source": "docs/lessons-vi/06_CN_bitrate_adaptation.md",
+    "sha256": "5ddeb3ce33cf36a2b321c70e6ac08a7f32069b492e4fd6b25bbcfcfafb953719"
+  },
+  {
+    "file": "vi/07_CN_fifo_vs_latest_value.md",
+    "source": "docs/lessons-vi/07_CN_fifo_vs_latest_value.md",
+    "sha256": "144f192e43e50b66321e5e0fd1b55387bb2b51429f91993dfb4104a53f5faca1"
+  },
+  {
+    "file": "vi/08_OS_scheduling_and_contention.md",
+    "source": "docs/lessons-vi/08_OS_scheduling_and_contention.md",
+    "sha256": "40c7c38db482eca07d8e9dfdfab050d1e35b7e519c84d5edcad94e80105e051f"
+  },
+  {
+    "file": "vi/09_OS_age_of_information.md",
+    "source": "docs/lessons-vi/09_OS_age_of_information.md",
+    "sha256": "8d18ee27bc541434bcab7c189dbcc400aa1941f24adeda525cd403d5e32ad809"
+  },
+  {
+    "file": "vi/10_OS_freertos_supervisor.md",
+    "source": "docs/lessons-vi/10_OS_freertos_supervisor.md",
+    "sha256": "b0e3a1f6860ee4f7b3e8c992f1340090baa539729e0f44c3d208afd00de56b86"
+  },
+  {
+    "file": "vi/INDEX.md",
+    "source": "docs/lessons-vi/INDEX.md",
+    "sha256": "c6be72cdfc7b558531c4476bdeffea7a7dfa0c75001e8a195a345f6c958078c6"
+  },
+  {
+    "file": "vi/img/01_rtp_metadata.png",
+    "source": "docs/lessons-vi/img/01_rtp_metadata.png",
+    "sha256": "3be262efdd6ecfd2682adceef7ba99c8bf98eeac361704d0efafdc17fd97c656"
+  },
+  {
+    "file": "vi/img/02_jitter_time.png",
+    "source": "docs/lessons-vi/img/02_jitter_time.png",
+    "sha256": "a503837d8d0c58983f971c9105874b002a6a59f2e868d0d122642d261d705b59"
+  },
+  {
+    "file": "vi/img/03_playout_tradeoff.png",
+    "source": "docs/lessons-vi/img/03_playout_tradeoff.png",
+    "sha256": "ae20a2a7f3e0a727d2283e7864a3d6e9e7bc57e02b1be4e5c043f190278c46c2"
+  },
+  {
+    "file": "vi/img/04_rtcp_loss.png",
+    "source": "docs/lessons-vi/img/04_rtcp_loss.png",
+    "sha256": "41632b306e01d722631fe511e27e54ca537bcac084155aa2763e84bc0a99475d"
+  },
+  {
+    "file": "vi/img/05_netem_frame_loss.png",
+    "source": "docs/lessons-vi/img/05_netem_frame_loss.png",
+    "sha256": "e6954b06fce93407a4a85edadb3140433619dc81e0ba673e392d79004b61b4a8"
+  },
+  {
+    "file": "vi/img/06_quality_bitrate.png",
+    "source": "docs/lessons-vi/img/06_quality_bitrate.png",
+    "sha256": "b534680f6f78a85bcb369de90479c083fc79f4aefd70a18483a825af2ee781a6"
+  },
+  {
+    "file": "vi/img/07_fifo_latest.png",
+    "source": "docs/lessons-vi/img/07_fifo_latest.png",
+    "sha256": "37107cc4dc30391fa8b52c2ff099bab1993f1a2487132b59caaf3409bd086ad8"
+  },
+  {
+    "file": "vi/img/08_contention_summary.png",
+    "source": "docs/lessons-vi/img/08_contention_summary.png",
+    "sha256": "45b1372810c5f0d305f584eb953b2b4f8474d09ee925b2ea6a3927397abe8c70"
+  },
+  {
+    "file": "vi/img/08_service_histogram.png",
+    "source": "docs/lessons-vi/img/08_service_histogram.png",
+    "sha256": "24571887ae341617603c6ab9e0470f94a38a9d758ef5ef01ce9d22f7bb7cd3af"
+  },
+  {
+    "file": "vi/img/09_input_policy_aoi.png",
+    "source": "docs/lessons-vi/img/09_input_policy_aoi.png",
+    "sha256": "59fc119690d04d87b86180ba364764719f8ba81127c5a5aaf93a13cb577248ad"
+  },
+  {
+    "file": "vi/img/09_measured_sawtooth.png",
+    "source": "docs/lessons-vi/img/09_measured_sawtooth.png",
+    "sha256": "59e0a3b75e71dc46ef96b1525bb3747efeaf7b54bfab9a77416764f381ac1314"
+  },
+  {
+    "file": "vi/img/10_f5_measured.png",
+    "source": "docs/lessons-vi/img/10_f5_measured.png",
+    "sha256": "ca1988b42ee88188062a00ad4747264176cebbd3d648e76521107e218a3c4abb"
+  },
+  {
+    "file": "vi/img/10_sim_degrade_and_recover_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_degrade_and_recover_timeline.png",
+    "sha256": "9747758a15e206415a66cb2d06b7adc92f5104ae051b824cca7db07512e06497"
+  },
+  {
+    "file": "vi/img/10_sim_healthy_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_healthy_timeline.png",
+    "sha256": "edc94c4199309d13191d6f04dc3d1ff93a0b0bed0ad2ee7e85e6a0c021c2734e"
+  },
+  {
+    "file": "vi/img/10_sim_heartbeat_priority_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_heartbeat_priority_timeline.png",
+    "sha256": "098bc84a8fec89c579f84d4b435daf3a22f796996c9df39722305fca5a308499"
+  },
+  {
+    "file": "vi/img/10_sim_late_heartbeat_at_deadline_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_late_heartbeat_at_deadline_timeline.png",
+    "sha256": "7cc4ff39e4c5979dc79ca5a5456754ddb208dabce801378ee9db096bb91cb95c"
+  },
+  {
+    "file": "vi/img/10_sim_late_within_timeout_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_late_within_timeout_timeline.png",
+    "sha256": "b848291c36090bfd1fdb9f2d2e766c3090ae23373fbed5bb481406f7bc07193c"
+  },
+  {
+    "file": "vi/img/10_sim_missed_heartbeat_recovery_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_missed_heartbeat_recovery_timeline.png",
+    "sha256": "72a20249ffcbaea319884b2b8bfcda8165f28a0ca8fc6f8f6b02731769afa2d3"
+  },
+  {
+    "file": "vi/img/10_sim_single_missed_heartbeat_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_single_missed_heartbeat_timeline.png",
+    "sha256": "02ae4acb2e840092d00046e3fa097d7b98c7c85e1cd57bedbd55da113ff1894e"
+  },
+  {
+    "file": "vi/img/10_sim_stale_result_failsafe_rearm_timeline.png",
+    "source": "docs/lessons-vi/img/10_sim_stale_result_failsafe_rearm_timeline.png",
+    "sha256": "d592b95ada275670db1f3fae80d39234eb9e0a4c4243d9ef185e054b2aecef21"
+  },
+  {
+    "file": "vi/img/evidence_manifest.json",
+    "source": "docs/lessons-vi/img/evidence_manifest.json",
+    "sha256": "d53e607185ec41efb6274c62bd82209e2551d4f4e3654eb4b2f2bef485308ee3"
+  },
+  {
+    "file": "img/aoi_sawtooth.svg",
+    "source": "docs/img/aoi_sawtooth.svg",
+    "sha256": "359ff87c7eafdd9d5ce5dccaf3e2164781be6a8b9d69927045daa0f5981236d5"
+  },
+  {
+    "file": "img/playout_timeline.svg",
+    "source": "docs/img/playout_timeline.svg",
+    "sha256": "f4e99c8b13ca2222642dae4b3d946c4c363b25e4668220dcb9220f9191d8de08"
+  },
+  {
+    "file": "img/rtp_header.svg",
+    "source": "docs/img/rtp_header.svg",
+    "sha256": "9a587b3d9d14d3a4f5fa1a765247d845c8ef86cf36520aec9a810f2a2b1e05f1"
+  }
+]

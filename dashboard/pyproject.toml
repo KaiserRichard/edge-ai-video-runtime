@@ -1,0 +1,14 @@
+[project]
+name = "coursework-dashboard"
+version = "1.0.0"
+description = "RTP/RTCP Edge AI and OS telemetry demo"
+requires-python = ">=3.11"
+dependencies = []
+license = {file = "LICENSE"}
+
+[project.optional-dependencies]
+test = ["pytest==9.2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

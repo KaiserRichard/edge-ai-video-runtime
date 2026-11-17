@@ -1,0 +1,13 @@
+time_s,state,fifo_age_ms,latest_age_ms,inference_ms,condition,fault,temperature_c,throttled,cpu_cores
+0,FRESH,90,60,24,idle-P0,synthetic CSV demonstration,52,0x0,15;25;30;35
+0.2,FRESH,120,90,25,idle-P0,,52,0x0,15;25;30;35
+0.4,FRESH,100,70,24,idle-P1,,52,0x0,15;25;30;35
+0.6,FRESH,160,100,26,idle-P1,,53,0x0,15;25;30;35
+0.8,FRESH,200,90,105,stress-P0,memory stress starts (synthetic),55,0x0,20;95;90;92
+1.0,FRESH,240,120,110,stress-P0,,56,0x0,20;95;90;92
+1.2,HOLD,280,160,108,stress-P1,inference stopped (synthetic),57,0x0,20;95;90;92
+1.5,HOLD,580,460,112,stress-P1,,58,0x0,20;95;90;92
+2.0,FAILSAFE,1080,960,,,timeout (synthetic),58,0x0,20;95;90;92
+2.5,FAILSAFE,1580,1460,,,,57,0x0,20;30;25;20
+3.0,FAILSAFE,2080,1960,,,,56,0x0,20;30;25;20
+4.0,FRESH,90,60,25,idle-P0,manual rearm (synthetic),54,0x0,15;25;30;35

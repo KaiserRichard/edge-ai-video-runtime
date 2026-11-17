@@ -1,0 +1,5 @@
+{
+  "provenance": "Illustrative model parameters only. Rules and worked examples: vi/06_CN_bitrate_adaptation.md and vi/07_CN_fifo_vs_latest_value.md; FIFO capacity follows the bounded dashboard synthetic model (dashboard/synthetic.py). Not a hardware recording.",
+  "abr": {"initial_quality":75,"minimum_quality":20,"maximum_quality":90,"decrease":0.7,"increase":5,"clean_reports":3,"high_loss":0.05,"low_loss":0.01,"seconds":60,"loss_step_start":5,"loss_step_end":15,"loss":0.15,"rr_interval_s":1},
+  "queue": {"fps":30,"service_ms":50,"fifo_capacity":8,"duration_s":8,"service_min_ms":20,"service_max_ms":150,"step_ms":1}
+}

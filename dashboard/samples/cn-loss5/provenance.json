@@ -1,0 +1,42 @@
+{
+  "source": "cn\\rtp\\results\\T3\\loss5\\run1",
+  "kind": "hardware CSV excerpt, not synthetic",
+  "selection": "first 8 seconds of each file's local clock",
+  "files": {
+    "receiver.csv": {
+      "rows": 627,
+      "source_sha256": "65a26ac65b88c5fb9be1c94334171ee3fdb68db1b43f3552bdf39fce0c9dec1f",
+      "excerpt_sha256": "609caaa7abb477c2270ffdf53f59ca1bd5061a2c6f19e556e3e8bad7a250a1da"
+    },
+    "frames_rx.csv": {
+      "rows": 121,
+      "source_sha256": "6a26180f3c2c30d98bd3651546222155db8dd7ebf0d113f1af0be76ba2758fa5",
+      "excerpt_sha256": "00a54a1c7dbff270cb85d62efb6d13444e460c1e38a11f944dc57b8c1ac35ef0"
+    },
+    "ai.csv": {
+      "rows": 96,
+      "source_sha256": "69c0a923f0ed263b7dd7736b3f3103e80fa0f363922b9d8967648b989d6fd470",
+      "excerpt_sha256": "f46ede2586332c165695fe947cf1cb4d4ff7da182ead0b9c38390b5ff5b2c752"
+    },
+    "sender.csv": {
+      "rows": 121,
+      "source_sha256": "46a49eb526c097b875c4776f9d4eed93b50886b5694d7833d9b7dc9f407d5453",
+      "excerpt_sha256": "d0014e7d5b91a28c5cb422b3c71960d434729c56a1fe829bc9418a1e367afa04"
+    },
+    "results_tx.csv": {
+      "rows": 96,
+      "source_sha256": "b29dfa51756027a807110328ac1b019dee21516eb89d5ee18cd72f5beb26b8ae",
+      "excerpt_sha256": "e05dfd879af3e6bb91211a57fe083c4463ad84b6651e1cbe2b0996907b58eb55"
+    },
+    "receiver_rtcp.csv": {
+      "rows": 298,
+      "source_sha256": "407b5f0c714ff888f50d99498434a27f39c7737852ce3a8e94bb3e3590bb4033",
+      "excerpt_sha256": "45c5923b52b55a044441c16b2ac58c5c251576c3a919412461bc347b5b37d884"
+    },
+    "sender_rtcp.csv": {
+      "rows": 296,
+      "source_sha256": "7c4450e59db0f50f8feaf6684f5655a2aedbb60873bf8dafbd1c143c108fe8e6",
+      "excerpt_sha256": "f669fabea591ccc4bce83a12fef46ee42b111cdd2742fe1179071f45a5d5a572"
+    }
+  }
+}

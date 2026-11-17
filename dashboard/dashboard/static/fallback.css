@@ -1,0 +1,1 @@
+.local-plot{height:100%;font:10px Consolas,monospace}.local-plot canvas{display:block}.local-legend{display:flex;gap:8px;flex-wrap:wrap;line-height:14px}.local-legend button{background:none;border:0;padding:1px 0;font:9px Consolas,monospace;cursor:pointer}.local-legend button:before{content:'━ ';font-weight:bold}
