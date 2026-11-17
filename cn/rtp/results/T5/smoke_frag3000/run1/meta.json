@@ -1,0 +1,1 @@
+{"scenario":"T5","config":"smoke_frag3000","run":1,"rx_host":"127.0.0.1","netem_if":"eth0","netem":"loss 2%","playout_ms":100,"quality":75,"fps":15,"mtu_payload":3000,"ai":"--ai onnx --ai-policy latest --threads 2 --model ~/Desktop/OS/pi-rescue-2026-10-13/home-richard/osbuild/wheels/mobilenetv2-12.onnx","source":"rpicam-vid mjpeg 640x480"}

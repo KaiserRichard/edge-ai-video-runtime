@@ -1,0 +1,1 @@
+{"scenario":"T2","run":4,"link":"ethernet 127.0.0.1/24","netem":"none","playout_ms":50,"source":"rpicam-vid mjpeg 640x480 15fps q75","ai":"onnx mobilenetv2-12 latest 2 threads on Mac","pcap":""}

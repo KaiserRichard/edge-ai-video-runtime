@@ -1,0 +1,13 @@
+scenario: T9
+config: capture_to_ai_latency
+interface: eth0
+capture_interface: any
+repetitions: 5
+links: {sender: local, receiver: local}
+commands:
+  sender: "python -m rtp.sender --host 127.0.0.1 --duration {duration_s} --clock-mono"
+  receiver: "python -m rtp.receiver --bind 0.0.0.0"
+  ai: "python -m rtp.ai --bind 0.0.0.0"
+steps:
+  - {netem: "", duration_s: 65}
+  - {netem: "loss 5%", duration_s: 65}

@@ -1,0 +1,1 @@
+{"scenario":"T3","config":"ge5_b4","run":5,"link":"ethernet","netem":"loss gemodel 1.316% 25% 100% 0%","playout_ms":100,"source":"rpicam-vid mjpeg 640x480 15fps q75","ai":"onnx mobilenetv2-12 latest 2 threads on Mac"}

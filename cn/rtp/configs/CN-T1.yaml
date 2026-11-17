@@ -1,0 +1,12 @@
+scenario: T1
+config: ethernet_baseline_wire_check
+interface: eth0
+capture_interface: any
+repetitions: 1
+links: {sender: local, receiver: local}
+commands:
+  sender: "python -m rtp.sender --host 127.0.0.1 --duration {duration_s} --fps 15 --width 640 --height 480"
+  receiver: "python -m rtp.receiver --bind 127.0.0.1"
+  ai: "python -m rtp.ai --bind 127.0.0.1"
+steps:
+  - {netem: "", duration_s: 65}

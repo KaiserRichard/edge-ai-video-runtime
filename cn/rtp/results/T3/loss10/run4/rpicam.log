@@ -1,0 +1,22 @@
+[0:59:06.232404849] [15917]  INFO Camera camera_manager.cpp:340 libcamera v0.7.2+rpt20261009
+[0:59:06.253104437] [15921]  INFO RPI pisp.cpp:725 libpisp version v1.5.0 86d71c805c3f 29-10-2026 (04:58:22)
+[0:59:06.256340063] [15921]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /opt/rpi-cam/share/libcamera/ipa/rpi/pisp/imx219.json
+[0:59:06.265610840] [15921]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@120000/rp1/i2c@88000/imx219@10' for pipeline handler rpi/pisp
+[0:59:06.265662397] [15921]  INFO RPI pisp.cpp:1186 Registered camera /base/axi/pcie@120000/rp1/i2c@88000/imx219@10 to CFE device /dev/media0 and ISP device /dev/media2 using PiSP variant BCM2712_C0
+[0:59:06.271403229] [15921]  WARN V4L2 v4l2_pixelformat.cpp:346 Unsupported V4L2 pixel format RPBP
+Mode selection for 640:480:12:P(15)
+    SRGGB10_CSI2P,640x480/103.327 - Score: 1000
+    SRGGB10_CSI2P,1640x1232/41.8515 - Score: 1444.49
+    SRGGB10_CSI2P,1920x1080/47.5737 - Score: 1636.67
+    SRGGB10_CSI2P,3280x2464/21.1941 - Score: 2162.49
+    SRGGB8,640x480/103.327 - Score: 2000
+    SRGGB8,1640x1232/41.8515 - Score: 2444.49
+    SRGGB8,1920x1080/47.5737 - Score: 2636.67
+    SRGGB8,3280x2464/21.1941 - Score: 3162.49
+Stream configuration adjusted
+[0:59:06.271635714] [15917]  INFO Camera camera.cpp:1216 configuring streams: (0) 640x480-YUV420/sYCC (1) 640x480-BGGR_PISP_COMP1/RAW
+[0:59:06.271714530] [15921]  INFO RPI pisp.cpp:1502 Sensor: /base/axi/pcie@120000/rp1/i2c@88000/imx219@10 - Selected sensor format: 640x480-SBGGR10_1X10/RAW - Selected CFE format: 640x480-PC1B/RAW
+Received signal 13
+Received signal 13
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  failed to write output bytes

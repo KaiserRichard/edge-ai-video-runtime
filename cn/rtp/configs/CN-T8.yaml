@@ -1,0 +1,15 @@
+scenario: T8
+config: rtcp_abr_loss_steps
+interface: eth0
+capture_interface: any
+repetitions: 5
+links: {sender: local, receiver: local}
+commands:
+  sender: "python -m rtp.sender --host 127.0.0.1 --duration {duration_s} --abr aimd --fps 15"
+  receiver: "python -m rtp.receiver --bind 0.0.0.0 --rr-interval 1"
+  ai: "python -m rtp.ai --bind 0.0.0.0"
+steps:
+  - {netem: "loss 0%", duration_s: 20}
+  - {netem: "loss 5%", duration_s: 20}
+  - {netem: "loss 15%", duration_s: 20}
+  - {netem: "loss 0%", duration_s: 20}

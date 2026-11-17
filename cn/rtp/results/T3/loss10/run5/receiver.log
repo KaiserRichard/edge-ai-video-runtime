@@ -1,0 +1,2 @@
+READY RTP=5004 RTCP=5005
+received 4445 RTP packets; malformed=0

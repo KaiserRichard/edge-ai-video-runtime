@@ -1,0 +1,16 @@
+scenario: T3
+config: random_and_burst_loss
+interface: eth0
+capture_interface: any
+repetitions: 5
+links: {sender: local, receiver: local}
+commands:
+  sender: "python -m rtp.sender --host 127.0.0.1 --duration {duration_s} --fps 15"
+  receiver: "python -m rtp.receiver --bind 0.0.0.0"
+  ai: "python -m rtp.ai --bind 0.0.0.0"
+steps:
+  - {netem: "loss 0%", duration_s: 65}
+  - {netem: "loss 1%", duration_s: 65}
+  - {netem: "loss 5%", duration_s: 65}
+  - {netem: "loss 10%", duration_s: 65}
+  - {netem: "loss gemodel 1% 25% 25% 0.2%", duration_s: 65}

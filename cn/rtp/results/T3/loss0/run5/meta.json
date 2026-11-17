@@ -1,0 +1,1 @@
+{"scenario":"T3","config":"loss0","run":5,"link":"ethernet","netem":"","playout_ms":100,"source":"rpicam-vid mjpeg 640x480 15fps q75","ai":"onnx mobilenetv2-12 latest 2 threads on Mac"}

@@ -1,0 +1,13 @@
+scenario: T4
+config: delay_jitter_playout
+interface: eth0
+capture_interface: any
+repetitions: 5
+links: {sender: local, receiver: local}
+commands:
+  sender: "python -m rtp.sender --host 127.0.0.1 --duration {duration_s} --fps 15"
+  receiver: "python -m rtp.receiver --bind 0.0.0.0 --playout-ms 20 50 100 200"
+  ai: "python -m rtp.ai --bind 0.0.0.0"
+steps:
+  - {netem: "delay 20ms 5ms", duration_s: 65}
+  - {netem: "delay 20ms 20ms distribution normal", duration_s: 65}
