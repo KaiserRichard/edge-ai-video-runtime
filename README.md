@@ -117,11 +117,9 @@ For Python and host checks see [CONTRIBUTING](CONTRIBUTING.md).
 ## Credits and licences
 
 OS team **3 Stars**: Nguyễn Quốc Khánh, Nguyễn Trung Hiếu and Nguyễn Quang Vinh;
-lecturer TS. Nguyễn Quang Minh. CN leader Nguyễn Quốc Khánh; four teammate names
-and lecturer remain `TODO(owner): name`. Full roles and pending consent are in
-[CREDITS](CREDITS.md).
+lecturer TS. Nguyễn Quang Minh. CN: a five-member course team led by Nguyễn Quốc Khánh; other members are not
+named. Roles are in [CREDITS](CREDITS.md).
 
 [MIT](LICENSE) covers independent team-owned code, subject to existing component
 terms. ns-3/firmware reference GPL terms and CC-BY-SA-3.0 wiring drawings retain
-their own scope. See [NOTICE](NOTICE.md). This local review tree is not yet a
-published release.
+their own scope. See [NOTICE](NOTICE.md).

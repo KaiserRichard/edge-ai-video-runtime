@@ -15,14 +15,10 @@ CN: **Mạng máy tính**, topic 11: RTP/RTCP real-time video for edge AI.
 | Contributor | Role |
 |---|---|
 | Nguyễn Quốc Khánh | Team leader |
-| TODO(owner): name (member 2) | TODO(owner): confirm contribution |
-| TODO(owner): name (member 3) | TODO(owner): confirm contribution |
-| TODO(owner): name (member 4) | TODO(owner): confirm contribution |
-| TODO(owner): name (member 5) | TODO(owner): confirm contribution |
-| TODO(owner): name (lecturer) | CN lecturer |
 
-Owner must confirm the CN roster, roles and all teammates' consent before
-publication. Student identifiers and private contacts are omitted.
+The CN topic was a five-member course team project. Other team members and
+the CN lecturer are not named here.
+Student identifiers and private contacts are omitted.
 
 Claude and Codex assisted code, tests, documentation and local staging.
 Human team roles remain as recorded above. Third-party authors retain credit
