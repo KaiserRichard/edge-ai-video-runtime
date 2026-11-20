@@ -1,0 +1,241 @@
+check,error,tolerance,pass,run
+Native packetizer fields vs course.Packetizer,0,0,1,B_adaptive0
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_adaptive0
+Native fragment counter vs course.Depacketizer,0,0,1,B_adaptive0
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_adaptive0
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_adaptive0
+RFC jitter independent recurrence,2.77555756156289e-17,1e-08,1,B_adaptive0
+RTCP fraction cumulative loss jitter,0,0,1,B_adaptive0
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_adaptive0
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_adaptive0
+Reassembly vs course.Depacketizer,0,1e-09,1,B_adaptive0
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_adaptive0
+Seeded propagation vs course.Delay,0,1e-09,1,B_adaptive0
+Native serialization independent workload equation,0,1e-07,1,B_adaptive0
+Channel timestamps equal serialized departures,0,1e-09,1,B_adaptive0
+Only surviving fragments reach the receiver,0,0,1,B_adaptive0
+Native delay matches each seeded arrival within 1 ms,0.000379160000225198,0.00101,1,B_adaptive0
+AI-result AoI exact integral vs course.aoi,1.94289029309402e-16,1e-09,1,B_adaptive0
+Reported AoI vs independent integral (ms),1.98951966012828e-13,1e-06,1,B_adaptive0
+Reported sequence loss vs unique received fragments,4.16333634234434e-17,1e-12,1,B_adaptive0
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_adaptive0
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_adaptive0
+Every received packet passed the native loss switch,0,0,1,B_adaptive0
+Every result came from an on-time frame,0,0,1,B_adaptive0
+Causal result timestamps,0,0,1,B_adaptive0
+Native packetizer fields vs course.Packetizer,0,0,1,B_adaptive1
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_adaptive1
+Native fragment counter vs course.Depacketizer,0,0,1,B_adaptive1
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_adaptive1
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_adaptive1
+RFC jitter independent recurrence,2.77555756156289e-17,1e-08,1,B_adaptive1
+RTCP fraction cumulative loss jitter,0,0,1,B_adaptive1
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_adaptive1
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_adaptive1
+Reassembly vs course.Depacketizer,0,1e-09,1,B_adaptive1
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_adaptive1
+Seeded propagation vs course.Delay,0,1e-09,1,B_adaptive1
+Native serialization independent workload equation,0,1e-07,1,B_adaptive1
+Channel timestamps equal serialized departures,0,1e-09,1,B_adaptive1
+Only surviving fragments reach the receiver,0,0,1,B_adaptive1
+Native delay matches each seeded arrival within 1 ms,0.000487400000217519,0.00101,1,B_adaptive1
+AI-result AoI exact integral vs course.aoi,1.80411241501588e-16,1e-09,1,B_adaptive1
+Reported AoI vs independent integral (ms),1.84741111297626e-13,1e-06,1,B_adaptive1
+Reported sequence loss vs unique received fragments,6.93889390390723e-18,1e-12,1,B_adaptive1
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_adaptive1
+AIMD feedback scheduling within two ticks,0.00199481223388887,0.00201,1,B_adaptive1
+Every received packet passed the native loss switch,0,0,1,B_adaptive1
+Every result came from an on-time frame,0,0,1,B_adaptive1
+Causal result timestamps,0,0,1,B_adaptive1
+Native packetizer fields vs course.Packetizer,0,0,1,B_bottleneck0
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_bottleneck0
+Native fragment counter vs course.Depacketizer,0,0,1,B_bottleneck0
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_bottleneck0
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_bottleneck0
+RFC jitter independent recurrence,3.5527136788005e-15,1e-08,1,B_bottleneck0
+RTCP fraction cumulative loss jitter,0,0,1,B_bottleneck0
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_bottleneck0
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_bottleneck0
+Reassembly vs course.Depacketizer,0,1e-09,1,B_bottleneck0
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_bottleneck0
+Seeded propagation vs course.Delay,0,1e-09,1,B_bottleneck0
+Native serialization independent workload equation,5.25801624462474e-13,1e-07,1,B_bottleneck0
+Channel timestamps equal serialized departures,0,1e-09,1,B_bottleneck0
+Only surviving fragments reach the receiver,0,0,1,B_bottleneck0
+Native delay matches each seeded arrival within 1 ms,0.00100100000011238,0.00101,1,B_bottleneck0
+AI-result AoI exact integral vs course.aoi,0,1e-09,1,B_bottleneck0
+Reported AoI vs independent integral (ms),0,1e-06,1,B_bottleneck0
+Reported sequence loss vs unique received fragments,3.12250225675825e-17,1e-12,1,B_bottleneck0
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_bottleneck0
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_bottleneck0
+Every received packet passed the native loss switch,0,0,1,B_bottleneck0
+Every result came from an on-time frame,0,0,1,B_bottleneck0
+Causal result timestamps,0,0,1,B_bottleneck0
+Native packetizer fields vs course.Packetizer,0,0,1,B_bottleneck1
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_bottleneck1
+Native fragment counter vs course.Depacketizer,0,0,1,B_bottleneck1
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_bottleneck1
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_bottleneck1
+RFC jitter independent recurrence,3.5527136788005e-15,1e-08,1,B_bottleneck1
+RTCP fraction cumulative loss jitter,0,0,1,B_bottleneck1
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_bottleneck1
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_bottleneck1
+Reassembly vs course.Depacketizer,0,1e-09,1,B_bottleneck1
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_bottleneck1
+Seeded propagation vs course.Delay,0,1e-09,1,B_bottleneck1
+Native serialization independent workload equation,1.77635683940025e-15,1e-07,1,B_bottleneck1
+Channel timestamps equal serialized departures,0,1e-09,1,B_bottleneck1
+Only surviving fragments reach the receiver,0,0,1,B_bottleneck1
+Native delay matches each seeded arrival within 1 ms,0.00100100000014081,0.00101,1,B_bottleneck1
+AI-result AoI exact integral vs course.aoi,1.11022302462516e-16,1e-09,1,B_bottleneck1
+Reported AoI vs independent integral (ms),1.13686837721616e-13,1e-06,1,B_bottleneck1
+Reported sequence loss vs unique received fragments,3.12250225675825e-17,1e-12,1,B_bottleneck1
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_bottleneck1
+AIMD feedback scheduling within two ticks,0.00195819814482245,0.00201,1,B_bottleneck1
+Every received packet passed the native loss switch,0,0,1,B_bottleneck1
+Every result came from an on-time frame,0,0,1,B_bottleneck1
+Causal result timestamps,0,0,1,B_bottleneck1
+Native packetizer fields vs course.Packetizer,0,0,1,B_queue_fifo
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_queue_fifo
+Native fragment counter vs course.Depacketizer,0,0,1,B_queue_fifo
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_queue_fifo
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_queue_fifo
+RFC jitter independent recurrence,2.77555756156289e-17,1e-08,1,B_queue_fifo
+RTCP fraction cumulative loss jitter,0,0,1,B_queue_fifo
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_queue_fifo
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_queue_fifo
+Reassembly vs course.Depacketizer,0,1e-09,1,B_queue_fifo
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_queue_fifo
+Seeded propagation vs course.Delay,0,1e-09,1,B_queue_fifo
+Native serialization independent workload equation,0,1e-07,1,B_queue_fifo
+Channel timestamps equal serialized departures,0,1e-09,1,B_queue_fifo
+Only surviving fragments reach the receiver,0,0,1,B_queue_fifo
+Native delay matches each seeded arrival within 1 ms,0.000100840000113678,0.00101,1,B_queue_fifo
+AI-result AoI exact integral vs course.aoi,3.33066907387547e-16,1e-09,1,B_queue_fifo
+Reported AoI vs independent integral (ms),3.41060513164848e-13,1e-06,1,B_queue_fifo
+Reported sequence loss vs unique received fragments,0,1e-12,1,B_queue_fifo
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_queue_fifo
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_queue_fifo
+Every received packet passed the native loss switch,0,0,1,B_queue_fifo
+Every result came from an on-time frame,0,0,1,B_queue_fifo
+Causal result timestamps,0,0,1,B_queue_fifo
+Native packetizer fields vs course.Packetizer,0,0,1,B_queue_latest
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_queue_latest
+Native fragment counter vs course.Depacketizer,0,0,1,B_queue_latest
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_queue_latest
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_queue_latest
+RFC jitter independent recurrence,2.77555756156289e-17,1e-08,1,B_queue_latest
+RTCP fraction cumulative loss jitter,0,0,1,B_queue_latest
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_queue_latest
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_queue_latest
+Reassembly vs course.Depacketizer,0,1e-09,1,B_queue_latest
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_queue_latest
+Seeded propagation vs course.Delay,0,1e-09,1,B_queue_latest
+Native serialization independent workload equation,0,1e-07,1,B_queue_latest
+Channel timestamps equal serialized departures,0,1e-09,1,B_queue_latest
+Only surviving fragments reach the receiver,0,0,1,B_queue_latest
+Native delay matches each seeded arrival within 1 ms,0.000100840000113678,0.00101,1,B_queue_latest
+AI-result AoI exact integral vs course.aoi,4.71844785465692e-16,1e-09,1,B_queue_latest
+Reported AoI vs independent integral (ms),4.83169060316868e-13,1e-06,1,B_queue_latest
+Reported sequence loss vs unique received fragments,0,1e-12,1,B_queue_latest
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_queue_latest
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_queue_latest
+Every received packet passed the native loss switch,0,0,1,B_queue_latest
+Every result came from an on-time frame,0,0,1,B_queue_latest
+Causal result timestamps,0,0,1,B_queue_latest
+Native packetizer fields vs course.Packetizer,0,0,1,B_reverse_all_lost
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_reverse_all_lost
+Native fragment counter vs course.Depacketizer,0,0,1,B_reverse_all_lost
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_reverse_all_lost
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_reverse_all_lost
+RFC jitter independent recurrence,2.77555756156289e-17,1e-08,1,B_reverse_all_lost
+RTCP fraction cumulative loss jitter,0,0,1,B_reverse_all_lost
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_reverse_all_lost
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_reverse_all_lost
+Reassembly vs course.Depacketizer,0,1e-09,1,B_reverse_all_lost
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_reverse_all_lost
+Seeded propagation vs course.Delay,0,1e-09,1,B_reverse_all_lost
+Native serialization independent workload equation,0,1e-07,1,B_reverse_all_lost
+Channel timestamps equal serialized departures,0,1e-09,1,B_reverse_all_lost
+Only surviving fragments reach the receiver,0,0,1,B_reverse_all_lost
+Native delay matches each seeded arrival within 1 ms,0.000279320000028171,0.00101,1,B_reverse_all_lost
+AI-result AoI exact integral vs course.aoi,5.55111512312578e-17,1e-09,1,B_reverse_all_lost
+Reported AoI vs independent integral (ms),5.6843418860808e-14,1e-06,1,B_reverse_all_lost
+Reported sequence loss vs unique received fragments,2.77555756156289e-17,1e-12,1,B_reverse_all_lost
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_reverse_all_lost
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_reverse_all_lost
+Every received packet passed the native loss switch,0,0,1,B_reverse_all_lost
+Every result came from an on-time frame,0,0,1,B_reverse_all_lost
+Causal result timestamps,0,0,1,B_reverse_all_lost
+Native packetizer fields vs course.Packetizer,0,0,1,B_reverse_impaired
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_reverse_impaired
+Native fragment counter vs course.Depacketizer,0,0,1,B_reverse_impaired
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_reverse_impaired
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_reverse_impaired
+RFC jitter independent recurrence,2.77555756156289e-17,1e-08,1,B_reverse_impaired
+RTCP fraction cumulative loss jitter,0,0,1,B_reverse_impaired
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_reverse_impaired
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_reverse_impaired
+Reassembly vs course.Depacketizer,0,1e-09,1,B_reverse_impaired
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_reverse_impaired
+Seeded propagation vs course.Delay,0,1e-09,1,B_reverse_impaired
+Native serialization independent workload equation,0,1e-07,1,B_reverse_impaired
+Channel timestamps equal serialized departures,0,1e-09,1,B_reverse_impaired
+Only surviving fragments reach the receiver,0,0,1,B_reverse_impaired
+Native delay matches each seeded arrival within 1 ms,0.000179479999999997,0.00101,1,B_reverse_impaired
+AI-result AoI exact integral vs course.aoi,5.55111512312578e-17,1e-09,1,B_reverse_impaired
+Reported AoI vs independent integral (ms),5.6843418860808e-14,1e-06,1,B_reverse_impaired
+Reported sequence loss vs unique received fragments,2.77555756156289e-17,1e-12,1,B_reverse_impaired
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_reverse_impaired
+AIMD feedback scheduling within two ticks,0.00158198144822386,0.00201,1,B_reverse_impaired
+Every received packet passed the native loss switch,0,0,1,B_reverse_impaired
+Every result came from an on-time frame,0,0,1,B_reverse_impaired
+Causal result timestamps,0,0,1,B_reverse_impaired
+Native packetizer fields vs course.Packetizer,0,0,1,B_sender_fifo
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_sender_fifo
+Native fragment counter vs course.Depacketizer,0,0,1,B_sender_fifo
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_sender_fifo
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_sender_fifo
+RFC jitter independent recurrence,4.44089209850063e-16,1e-08,1,B_sender_fifo
+RTCP fraction cumulative loss jitter,0,0,1,B_sender_fifo
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_sender_fifo
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_sender_fifo
+Reassembly vs course.Depacketizer,0,1e-09,1,B_sender_fifo
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_sender_fifo
+Seeded propagation vs course.Delay,0,1e-09,1,B_sender_fifo
+Native serialization independent workload equation,0,1e-07,1,B_sender_fifo
+Channel timestamps equal serialized departures,0,1e-09,1,B_sender_fifo
+Only surviving fragments reach the receiver,0,0,1,B_sender_fifo
+Native delay matches each seeded arrival within 1 ms,0.000100840000113678,0.00101,1,B_sender_fifo
+AI-result AoI exact integral vs course.aoi,1.77635683940025e-15,1e-09,1,B_sender_fifo
+Reported AoI vs independent integral (ms),1.81898940354586e-12,1e-06,1,B_sender_fifo
+Reported sequence loss vs unique received fragments,0,1e-12,1,B_sender_fifo
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_sender_fifo
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_sender_fifo
+Every received packet passed the native loss switch,0,0,1,B_sender_fifo
+Every result came from an on-time frame,0,0,1,B_sender_fifo
+Causal result timestamps,0,0,1,B_sender_fifo
+Native packetizer fields vs course.Packetizer,0,0,1,B_sender_latest
+Native RFC 3550 block vs course.ReceiverReport jitter,0,1e-09,1,B_sender_latest
+Native fragment counter vs course.Depacketizer,0,0,1,B_sender_latest
+Deadline gate releases exactly the complete on-time frames,0,0,1,B_sender_latest
+RFC jitter vs course.RFCJitter and RR,0,1e-08,1,B_sender_latest
+RFC jitter independent recurrence,4.44089209850063e-16,1e-08,1,B_sender_latest
+RTCP fraction cumulative loss jitter,0,0,1,B_sender_latest
+Seeded RTCP reverse delivery vs course.Delay and course.Loss,0,1e-09,1,B_sender_latest
+Playout deadline vs course.PlayoutBuffer,0,1e-09,1,B_sender_latest
+Reassembly vs course.Depacketizer,0,1e-09,1,B_sender_latest
+Seeded packet and fragment loss vs course.Loss,0,0,1,B_sender_latest
+Seeded propagation vs course.Delay,0,1e-09,1,B_sender_latest
+Native serialization independent workload equation,0,1e-07,1,B_sender_latest
+Channel timestamps equal serialized departures,0,1e-09,1,B_sender_latest
+Only surviving fragments reach the receiver,0,0,1,B_sender_latest
+Native delay matches each seeded arrival within 1 ms,0.000100840000113678,0.00101,1,B_sender_latest
+AI-result AoI exact integral vs course.aoi,1.66533453693773e-16,1e-09,1,B_sender_latest
+Reported AoI vs independent integral (ms),1.70530256582424e-13,1e-06,1,B_sender_latest
+Reported sequence loss vs unique received fragments,0,1e-12,1,B_sender_latest
+AIMD Stateflow rate vs course.aimd,0,1e-10,1,B_sender_latest
+AIMD feedback scheduling within two ticks,0,0.00201,1,B_sender_latest
+Every received packet passed the native loss switch,0,0,1,B_sender_latest
+Every result came from an on-time frame,0,0,1,B_sender_latest
+Causal result timestamps,0,0,1,B_sender_latest

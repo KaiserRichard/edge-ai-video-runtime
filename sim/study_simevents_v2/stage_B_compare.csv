@@ -1,0 +1,201 @@
+run,metric,v1_value,v2_value,abs_diff,tolerance,rule,pass
+B_adaptive0,sent,4557,4557,0,0,exact,1
+B_adaptive0,received,4268,4268,0,0,exact,1
+B_adaptive0,results,557,557,0,0,exact,1
+B_adaptive0,reports_sent,52,52,0,0,exact,1
+B_adaptive0,reports_delivered,51,51,0,0,exact,1
+B_adaptive0,sender_overflow,0,0,0,0,exact,1
+B_adaptive0,ai_overflow,0,0,0,0,exact,1
+B_adaptive0,sender_replaced,0,0,0,0,exact,1
+B_adaptive0,ai_replaced,0,0,0,0,exact,1
+B_adaptive0,reordered,0,0,0,0,exact,1
+B_adaptive0,sequence_loss,0.0660571428571429,0.0660571428571429,0,0,exact,1
+B_adaptive0,frame_loss,0.268428372739917,0.268428372739917,0,0,exact,1
+B_adaptive0,late,0,0,0,0,exact,1
+B_adaptive0,rate_min,1,1,0,0,exact,1
+B_adaptive0,rate_final,1,1,0,0,exact,1
+B_adaptive0,jitter_ms,0.141393882461187,0.141393882461187,0,1,2% or 1 ms,1
+B_adaptive0,latency_p50_ms,62.7006800000558,62.7006800000558,0,1.25401360000112,2% or 1 ms,1
+B_adaptive0,latency_p95_ms,62.7006800000984,62.7006800000984,0,1.25401360000197,2% or 1 ms,1
+B_adaptive0,aoi_ms,147.700680000057,147.700680000057,0,2.95401360000114,2% or 1 ms,1
+B_adaptive0,on_time,0.731571627260083,0.731571627260083,0,0.0146314325452017,2% relative,1
+B_adaptive1,sent,2730,2730,0,0,exact,1
+B_adaptive1,received,2609,2609,0,0,exact,1
+B_adaptive1,results,657,657,0,0,exact,1
+B_adaptive1,reports_sent,52,52,0,0,exact,1
+B_adaptive1,reports_delivered,51,51,0,0,exact,1
+B_adaptive1,sender_overflow,0,0,0,0,exact,1
+B_adaptive1,ai_overflow,0,0,0,0,exact,1
+B_adaptive1,sender_replaced,0,0,0,0,exact,1
+B_adaptive1,ai_replaced,0,0,0,0,exact,1
+B_adaptive1,reordered,0,0,0,0,exact,1
+B_adaptive1,sequence_loss,0.0474882260596546,0.0474882260596546,0,0,exact,1
+B_adaptive1,frame_loss,0.129346314325452,0.129346314325452,0,0,exact,1
+B_adaptive1,late,0,0,0,0,exact,1
+B_adaptive1,rate_min,0.15,0.15,0,0,exact,1
+B_adaptive1,rate_final,0.35,0.35,0,0,exact,1
+B_adaptive1,jitter_ms,0.115453019608361,0.115453019608361,0,1,2% or 1 ms,1
+B_adaptive1,latency_p50_ms,62.7006800000629,62.7006800000629,0,1.25401360000126,2% or 1 ms,1
+B_adaptive1,latency_p95_ms,62.7006800000984,62.7006800000984,0,1.25401360000197,2% or 1 ms,1
+B_adaptive1,aoi_ms,111.867346666723,111.867346666723,0,2.23734693333446,2% or 1 ms,1
+B_adaptive1,on_time,0.870653685674548,0.870653685674548,0,0.017413073713491,2% relative,1
+B_bottleneck0,sent,1823,1823,0,0,exact,1
+B_bottleneck0,received,1744,1744,0,0,exact,1
+B_bottleneck0,results,0,0,0,0,exact,1
+B_bottleneck0,reports_sent,35,35,0,0,exact,1
+B_bottleneck0,reports_delivered,34,34,0,0,exact,1
+B_bottleneck0,sender_overflow,0,0,0,0,exact,1
+B_bottleneck0,ai_overflow,0,0,0,0,exact,1
+B_bottleneck0,sender_replaced,0,0,0,0,exact,1
+B_bottleneck0,ai_replaced,0,0,0,0,exact,1
+B_bottleneck0,reordered,0,0,0,0,exact,1
+B_bottleneck0,sequence_loss,0.0263620386643234,0.0263620386643234,0,0,exact,1
+B_bottleneck0,frame_loss,0.228187919463087,0.228187919463087,0,0,exact,1
+B_bottleneck0,late,0.771812080536913,0.771812080536913,0,0,exact,1
+B_bottleneck0,rate_min,1,1,0,0,exact,1
+B_bottleneck0,rate_final,1,1,0,0,exact,1
+B_bottleneck0,jitter_ms,22.9273473707948,22.9273473707948,0,1,2% or 1 ms,1
+B_bottleneck0,latency_p50_ms,NaN,NaN,0,1,2% or 1 ms,1
+B_bottleneck0,latency_p95_ms,NaN,NaN,0,1,2% or 1 ms,1
+B_bottleneck0,aoi_ms,NaN,NaN,0,1,2% or 1 ms,1
+B_bottleneck0,on_time,0,0,0,1e-12,2% relative,1
+B_bottleneck1,sent,738,738,0,0,exact,1
+B_bottleneck1,received,706,706,0,0,exact,1
+B_bottleneck1,results,170,170,0,0,exact,1
+B_bottleneck1,reports_sent,35,35,0,0,exact,1
+B_bottleneck1,reports_delivered,34,34,0,0,exact,1
+B_bottleneck1,sender_overflow,0,0,0,0,exact,1
+B_bottleneck1,ai_overflow,0,0,0,0,exact,1
+B_bottleneck1,sender_replaced,0,0,0,0,exact,1
+B_bottleneck1,ai_replaced,0,0,0,0,exact,1
+B_bottleneck1,reordered,0,0,0,0,exact,1
+B_bottleneck1,sequence_loss,0.0246305418719212,0.0246305418719212,0,0,exact,1
+B_bottleneck1,frame_loss,0.0335570469798658,0.0335570469798658,0,0,exact,1
+B_bottleneck1,late,0,0,0,0,exact,1
+B_bottleneck1,rate_min,0.15,0.15,0,0,exact,1
+B_bottleneck1,rate_final,0.16,0.16,0,0,exact,1
+B_bottleneck1,jitter_ms,2.54050865744091,2.54050865744091,0,1,2% or 1 ms,1
+B_bottleneck1,latency_p50_ms,81.4173636364028,81.4173636364028,0,1.62834727272806,2% or 1 ms,1
+B_bottleneck1,latency_p95_ms,81.4173636364188,81.4173636364188,0,1.62834727272838,2% or 1 ms,1
+B_bottleneck1,aoi_ms,116.972919191959,116.972919191959,0,2.33945838383918,2% or 1 ms,1
+B_bottleneck1,on_time,0.966442953020134,0.966442953020134,0,0.0193288590604027,2% relative,1
+B_queue_fifo,sent,2184,2184,0,0,exact,1
+B_queue_fifo,received,2184,2184,0,0,exact,1
+B_queue_fifo,results,248,248,0,0,exact,1
+B_queue_fifo,reports_sent,14,14,0,0,exact,1
+B_queue_fifo,reports_delivered,13,13,0,0,exact,1
+B_queue_fifo,sender_overflow,0,0,0,0,exact,1
+B_queue_fifo,ai_overflow,112,112,0,0,exact,1
+B_queue_fifo,sender_replaced,0,0,0,0,exact,1
+B_queue_fifo,ai_replaced,0,0,0,0,exact,1
+B_queue_fifo,reordered,0,0,0,0,exact,1
+B_queue_fifo,sequence_loss,0,0,0,0,exact,1
+B_queue_fifo,frame_loss,0,0,0,0,exact,1
+B_queue_fifo,late,0,0,0,0,exact,1
+B_queue_fifo,rate_min,1,1,0,0,exact,1
+B_queue_fifo,rate_final,1,1,0,0,exact,1
+B_queue_fifo,jitter_ms,0.133130775769951,0.133130775769951,0,1,2% or 1 ms,1
+B_queue_fifo,latency_p50_ms,475.200680000017,491.867346666683,16.666666666666,9.50401360000034,2% or 1 ms,0
+B_queue_fifo,latency_p95_ms,483.534013333365,500.200680000033,16.666666666668,9.6706802666673,2% or 1 ms,0
+B_queue_fifo,aoi_ms,500.200680000009,516.867346666675,16.6666666666659,10.0040136000002,2% or 1 ms,0
+B_queue_fifo,on_time,1,1,0,0.02,2% relative,1
+B_queue_latest,sent,2184,2184,0,0,exact,1
+B_queue_latest,received,2184,2184,0,0,exact,1
+B_queue_latest,results,241,241,0,0,exact,1
+B_queue_latest,reports_sent,14,14,0,0,exact,1
+B_queue_latest,reports_delivered,13,13,0,0,exact,1
+B_queue_latest,sender_overflow,0,0,0,0,exact,1
+B_queue_latest,ai_overflow,0,0,0,0,exact,1
+B_queue_latest,sender_replaced,0,0,0,0,exact,1
+B_queue_latest,ai_replaced,119,119,0,0,exact,1
+B_queue_latest,reordered,0,0,0,0,exact,1
+B_queue_latest,sequence_loss,0,0,0,0,exact,1
+B_queue_latest,frame_loss,0,0,0,0,exact,1
+B_queue_latest,late,0,0,0,0,exact,1
+B_queue_latest,rate_min,1,1,0,0,exact,1
+B_queue_latest,rate_final,1,1,0,0,exact,1
+B_queue_latest,jitter_ms,0.133130775769951,0.133130775769951,0,1,2% or 1 ms,1
+B_queue_latest,latency_p50_ms,108.534013333352,116.867346666703,8.33333333335101,2.17068026666704,2% or 1 ms,0
+B_queue_latest,latency_p95_ms,116.8673466667,133.534013333367,16.666666666667,2.337346933334,2% or 1 ms,0
+B_queue_latest,aoi_ms,133.534013333343,150.200680000009,16.666666666666,2.67068026666686,2% or 1 ms,0
+B_queue_latest,on_time,1,1,0,0.02,2% relative,1
+B_reverse_all_lost,sent,546,546,0,0,exact,1
+B_reverse_all_lost,received,456,456,0,0,exact,1
+B_reverse_all_lost,results,29,29,0,0,exact,1
+B_reverse_all_lost,reports_sent,8,8,0,0,exact,1
+B_reverse_all_lost,reports_delivered,0,0,0,0,exact,1
+B_reverse_all_lost,sender_overflow,0,0,0,0,exact,1
+B_reverse_all_lost,ai_overflow,0,0,0,0,exact,1
+B_reverse_all_lost,sender_replaced,0,0,0,0,exact,1
+B_reverse_all_lost,ai_replaced,0,0,0,0,exact,1
+B_reverse_all_lost,reordered,0,0,0,0,exact,1
+B_reverse_all_lost,sequence_loss,0.164835164835165,0.164835164835165,0,0,exact,1
+B_reverse_all_lost,frame_loss,0.675675675675676,0.675675675675676,0,0,exact,1
+B_reverse_all_lost,late,0,0,0,0,exact,1
+B_reverse_all_lost,rate_min,1,1,0,0,exact,1
+B_reverse_all_lost,rate_final,1,1,0,0,exact,1
+B_reverse_all_lost,jitter_ms,0.159321759593219,0.159321759593219,0,1,2% or 1 ms,1
+B_reverse_all_lost,latency_p50_ms,62.7006800000003,62.7006800000003,0,1.25401360000001,2% or 1 ms,1
+B_reverse_all_lost,latency_p95_ms,62.7006800000061,62.7006800000061,0,1.25401360000012,2% or 1 ms,1
+B_reverse_all_lost,aoi_ms,225.600271822223,225.600271822223,0,4.51200543644446,2% or 1 ms,1
+B_reverse_all_lost,on_time,0.324324324324324,0.324324324324324,0,0.00648648648648648,2% relative,1
+B_reverse_impaired,sent,369,369,0,0,exact,1
+B_reverse_impaired,received,306,306,0,0,exact,1
+B_reverse_impaired,results,42,42,0,0,exact,1
+B_reverse_impaired,reports_sent,8,8,0,0,exact,1
+B_reverse_impaired,reports_delivered,5,5,0,0,exact,1
+B_reverse_impaired,sender_overflow,0,0,0,0,exact,1
+B_reverse_impaired,ai_overflow,0,0,0,0,exact,1
+B_reverse_impaired,sender_replaced,0,0,0,0,exact,1
+B_reverse_impaired,ai_replaced,0,0,0,0,exact,1
+B_reverse_impaired,reordered,0,0,0,0,exact,1
+B_reverse_impaired,sequence_loss,0.172661870503597,0.172661870503597,0,0,exact,1
+B_reverse_impaired,frame_loss,0.5,0.5,0,0,exact,1
+B_reverse_impaired,late,0,0,0,0,exact,1
+B_reverse_impaired,rate_min,0.512,0.512,0,0,exact,1
+B_reverse_impaired,rate_final,0.512,0.512,0,0,exact,1
+B_reverse_impaired,jitter_ms,0.120404088417939,0.120404088417939,0,1,2% or 1 ms,1
+B_reverse_impaired,latency_p50_ms,62.7006800000003,62.7006800000003,0,1.25401360000001,2% or 1 ms,1
+B_reverse_impaired,latency_p95_ms,62.7006800000053,62.7006800000053,0,1.25401360000011,2% or 1 ms,1
+B_reverse_impaired,aoi_ms,158.150475911112,158.150475911112,0,3.16300951822224,2% or 1 ms,1
+B_reverse_impaired,on_time,0.5,0.5,0,0.01,2% relative,1
+B_sender_fifo,sent,1510,1510,0,0,exact,1
+B_sender_fifo,received,1510,1510,0,0,exact,1
+B_sender_fifo,results,3,3,0,0,exact,1
+B_sender_fifo,reports_sent,14,14,0,0,exact,1
+B_sender_fifo,reports_delivered,13,13,0,0,exact,1
+B_sender_fifo,sender_overflow,112,112,0,0,exact,1
+B_sender_fifo,ai_overflow,0,0,0,0,exact,1
+B_sender_fifo,sender_replaced,0,0,0,0,exact,1
+B_sender_fifo,ai_replaced,0,0,0,0,exact,1
+B_sender_fifo,reordered,0,0,0,0,exact,1
+B_sender_fifo,sequence_loss,0,0,0,0,exact,1
+B_sender_fifo,frame_loss,0.333333333333333,0.333333333333333,0,0,exact,1
+B_sender_fifo,late,0.666666666666667,0.666666666666667,0,0,exact,1
+B_sender_fifo,rate_min,1,1,0,0,exact,1
+B_sender_fifo,rate_final,1,1,0,0,exact,1
+B_sender_fifo,jitter_ms,2.79983562362182,2.79983562362182,0,1,2% or 1 ms,1
+B_sender_fifo,latency_p50_ms,NaN,NaN,0,1,2% or 1 ms,1
+B_sender_fifo,latency_p95_ms,NaN,NaN,0,1,2% or 1 ms,1
+B_sender_fifo,aoi_ms,6933.33333333333,6933.33333333333,0,138.666666666667,2% or 1 ms,1
+B_sender_fifo,on_time,0,0,0,1e-12,2% relative,1
+B_sender_latest,sent,1468,1468,0,0,exact,1
+B_sender_latest,received,1468,1468,0,0,exact,1
+B_sender_latest,results,241,241,0,0,exact,1
+B_sender_latest,reports_sent,14,14,0,0,exact,1
+B_sender_latest,reports_delivered,13,13,0,0,exact,1
+B_sender_latest,sender_overflow,0,0,0,0,exact,1
+B_sender_latest,ai_overflow,0,0,0,0,exact,1
+B_sender_latest,sender_replaced,119,119,0,0,exact,1
+B_sender_latest,ai_replaced,0,0,0,0,exact,1
+B_sender_latest,reordered,0,0,0,0,exact,1
+B_sender_latest,sequence_loss,0,0,0,0,exact,1
+B_sender_latest,frame_loss,0.333333333333333,0.333333333333333,0,0,exact,1
+B_sender_latest,late,0,0,0,0,exact,1
+B_sender_latest,rate_min,1,1,0,0,exact,1
+B_sender_latest,rate_final,1,1,0,0,exact,1
+B_sender_latest,jitter_ms,2.80111353484947,2.80111353484947,0,1,2% or 1 ms,1
+B_sender_latest,latency_p50_ms,112.700680000017,112.700680000017,0,2.25401360000034,2% or 1 ms,1
+B_sender_latest,latency_p95_ms,112.700680000033,112.700680000033,0,2.25401360000066,2% or 1 ms,1
+B_sender_latest,aoi_ms,140.478457777795,140.478457777795,0,2.8095691555559,2% or 1 ms,1
+B_sender_latest,on_time,0.666666666666667,0.666666666666667,0,0.0133333333333333,2% relative,1

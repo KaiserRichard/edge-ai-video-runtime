@@ -1,10 +1,16 @@
-**Not yet run in MATLAB during staging.**
-
 # Shared CN / OS simulation coursework
 
-Source implementation for MATLAB, Simulink and Stateflow. **MATLAB was not started during preparation.** Model generation, MATLAB tests, simulation results and app rendering remain to be verified when the memory-heavy job has finished. No simulated results are presented as measured or as already executed.
+Source implementation for MATLAB, Simulink and Stateflow. The shared models in the "Run later" section were prepared without starting MATLAB: their model generation, MATLAB tests, simulation results and app rendering remain to be verified when the memory-heavy job has finished. No simulated results are presented as measured or as already executed.
 
 This folder contained a partial `+course` library and measurement snapshots. They were retained and extended. Existing `run.log` / `run1.log` are pre-existing files, not validation of this implementation.
+
+
+## CN SimEvents models (added 20 November 2026, run in MATLAB R2026b)
+
+- **v2, [CN_simevents_v2.slx](generated/CN_simevents_v2.slx):** the whole RTP/RTCP path is built from native SimEvents blocks you can open and follow: frame source, sender queue (FIFO or latest-value), RTP packetizer (an Entity Replicator makes one copy per fragment), link serializer, seeded loss and delay channel, receiver (RFC 3550 jitter, playout-deadline gate, per-frame reassembly, 1 s RTCP report), inference queue, RTCP return path and the Stateflow AIMD rate controller. See the [v2 report](study_simevents_v2/SIMEVENTS_V2_REPORT.md) and its [figures](study_simevents_v2/figures).
+- **v1, [CN_simevents.slx](generated/CN_simevents.slx):** the first connected SimEvents model, where the packetizer, channel and receiver were MATLAB discrete-event code blocks. See the [v1 report](study_simevents/SIMEVENTS_REPORT.md).
+- **v1 vs v2 on the same seeds:** Stage A 100/100 values identical; Stage B 194/200 and Stage C 555/560 identical or within tolerance. The remaining 11 values (inference-queue runs) differ by one frame interval because two events fall at the same instant; with the service time moved by ±1 ns both models agree exactly (32/32). Regression suite: 31/31 tests pass.
+- Simulation only. Stage C compares against measured summary values from the Pi/netem experiments in [data](data).
 
 ## Run later
 
