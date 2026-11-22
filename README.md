@@ -28,7 +28,7 @@ flowchart LR
   TX --> LAP[Laptop receiver / playout / AI workload]
   LAP -->|RTCP RR / APP result| TX
   CSV[Retained measurement CSVs] --> DASH[Dashboard replay]
-  MODEL[MATLAB / Stateflow models] -. separate model study .-> DASH
+  MODEL[MATLAB SimEvents / Stateflow models] -. separate model study .-> DASH
 ```
 
 The OS and CN experiments are separate teaching pipelines. This diagram does
@@ -82,9 +82,46 @@ toolchains and any requested scheduling/netem privileges. Model weights are
 separate inputs. Keep the custom RTP payload identified; it is not RFC 2435.
 No firmware compilation, flashing, UART electrical test or hardware run is claimed.
 
-## MATLAB / Simulink / Stateflow — not yet run in MATLAB
+## Simulation models (MATLAB SimEvents and Stateflow)
 
-Shared models and 30 MATLAB test methods are source awaiting execution.
+These models were built and run in MATLAB R2026b. They are simulations, not
+hardware measurements.
+
+**CN network as a SimEvents model (v2).** The whole RTP/RTCP path is drawn
+from native SimEvents blocks: frame source, sender queue, RTP packetizer, link
+serialization, lossy channel, receiver (RFC 3550 jitter, playout deadline,
+reassembly), AI inference, the RTCP return path and AIMD rate control
+(Stateflow). Each box opens into its own diagram.
+
+![CN SimEvents v2, top level](sim/study_simevents_v2/figures/CN_simevents_v2.png)
+
+The receiver, for example: arrival with jitter and deadline functions, the
+playout-deadline gate, frame reassembly and the 1 s RTCP report clock.
+
+![CN SimEvents v2, receiver subsystem](sim/study_simevents_v2/figures/CN_simevents_v2__Receiver.png)
+
+Results: with the same seeds, v2 reproduces v1 exactly on Stage A (100/100
+metrics identical), and all 31 regression tests pass. Stage B differences
+come from a tie between simultaneous events and vanish when the tie is broken.
+Details and all 14 subsystem figures: [SimEvents v2 report](sim/study_simevents_v2/SIMEVENTS_V2_REPORT.md).
+
+The dashboard below is from the v1 model: fixed bitrate versus AIMD during a
+15% forward-loss step from 15 s to 35 s. AIMD cuts the target rate, which keeps
+cumulative loss lower and the playout buffer fuller.
+
+![Stage B dashboard, fixed versus AIMD](sim/study_simevents/figures/Stage_B_Dashboard.png)
+
+**OS freshness supervisor as a Stateflow model.** The STM32 supervisor logic
+(FRESH / HOLD / latched FAILSAFE) runs as a Stateflow chart on a 1 kHz tick
+with accepted UART metadata. All eight saved scenarios pass
+([status](sim/os_supervisor/EXECUTION_STATUS.json)). In the scenario below,
+results stop arriving, the supervisor goes to HOLD, then returns to FRESH when
+traffic resumes.
+
+![OS supervisor, degrade and recover](sim/os_supervisor/output/degrade_and_recover_timeline.png)
+
+### Running the models
+
 From the repository's `sim` folder in a licensed MATLAB installation:
 
 ```matlab
@@ -94,10 +131,9 @@ build_models
 run_tests(true)
 ```
 
-See [model scope and assumptions](sim/README.md). The separate
-[supervisor status](sim/os_supervisor/EXECUTION_STATUS.json) records eight
-earlier scenarios; those saved simulations were not rerun during staging.
-They are not physical measurements.
+For the SimEvents v2 study, run `run_cn_simevents_v2_study('A')` (about 35 s),
+then `'B'` and `'C'`, from `sim/study_simevents_v2`. See
+[model scope and assumptions](sim/README.md).
 
 ## Repository map
 
