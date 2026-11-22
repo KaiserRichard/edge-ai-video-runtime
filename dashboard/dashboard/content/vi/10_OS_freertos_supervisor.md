@@ -68,7 +68,7 @@ Thêm một con số: một frame kết quả dài 35 byte. Với 10 bit cho m�
 
 ## 4. Bằng chứng mô phỏng (Simulation evidence)
 
-<!-- codex-e:figures-simulation-start -->
+<!-- figures-simulation-start -->
 
 ![MÔ PHỎNG: Bản tin đều đặn giữ supervisor ở trạng thái FRESH.](img/10_sim_healthy_timeline.png)
 
@@ -102,7 +102,7 @@ Thêm một con số: một frame kết quả dài 35 byte. Với 10 bit cho m�
 
 *MÔ PHỎNG: Khi hai điều kiện lỗi cùng xuất hiện, timeout heartbeat được ưu tiên. Nguồn: `sim\os_supervisor\output\heartbeat_priority_timeline.png`*
 
-<!-- codex-e:figures-simulation-end -->
+<!-- figures-simulation-end -->
 
 - Hàm: `SIM\+course\supervisor.m` (`course.supervisor`), bản tham chiếu chạy từng tick của máy trạng thái. Trong mô hình Simulink `OS_shared`, cùng logic đó là một Stateflow chart chạy ở 1 kHz, do `SIM\models\build_models.m` sinh ra thành `SIM\generated\OS_shared.slx`.
 - Test: `supervisorBoundariesAndLatch` trong `SIM\tests\TestLibrary.m` (biên tại đúng 200 ms, chốt latch, heartbeat được ưu tiên).
@@ -113,13 +113,13 @@ Thêm một con số: một frame kết quả dài 35 byte. Với 10 bit cho m�
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: 5 log F5; HOLD khoảng 175 ms và FAILSAFE khoảng 475 ms sau kết quả cuối, heartbeat tại HOLD chỉ khoảng 18 ms tuổi; thời gian trạng thái MCU, chưa đo chân LED.](img/10_f5_measured.png)
 
 *SOURCE: 5 log F5; HOLD khoảng 175 ms và FAILSAFE khoảng 475 ms sau kết quả cuối, heartbeat tại HOLD chỉ khoảng 18 ms tuổi; thời gian trạng thái MCU, chưa đo chân LED. Nguồn: `docs/os-report\results\2026-10-12_f5_stale\20261012T101949Z_f5\r1\F5-r01\pipeline\state_events.csv` (các lần lặp cùng cấu hình; danh sách đầy đủ: `img/evidence_manifest.json`).*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 Thời gian từ bản tin cuối cùng được chấp nhận đến lúc đổi trạng thái, đo bằng timer của chính MCU; P50 tính bằng ms (SOURCE: `OS\docs\STAGE_REPORT.md`, "Physical faults"; dữ liệu gốc: `OS\results\2026-10-12_e4_faults\`, `2026-10-12_f5_stale\`, `2026-10-12_f4_extra\`):
 

@@ -1,7 +1,7 @@
 {
   "updated_at": "2026-11-16T18:17:04.625836+07:00",
   "status": "all eight actual Stateflow scenarios passed",
-  "model": "codex_e_os_supervisor.slx",
+  "model": "os_supervisor_chart.slx",
   "test_results": "output/test_results.json",
   "passed": [
     {
@@ -160,12 +160,12 @@
   "figures_saved": 8,
   "plot_format_refresh": "pending RAM gate; original eight actual plots already saved",
   "sha256": {
-    "build_os_supervisor.m": "cff46a14afc38fdf0653ca8ec3c8c382ebdbcbf067a6376ad6d4598325b06117",
-    "run_os_supervisor_tests.m": "480f6ce1a7fa52200ac3788c51b606b388dbd3cf849578a4a356bfa1dfde27cd",
+    "build_os_supervisor.m": "64e4b590ff2853508eaff5021b3a60a2bf41ef972780e78e8e69ee03cbee26d4",
+    "run_os_supervisor_tests.m": "b85250c5c9093cfaee92fa7ecc962b3969403bb1e2d9fe319ae3a12cbe889e73",
     "os_supervisor_scenarios.m": "a93310266b1a1bad85a5a9d519fb657977344a7994605eed0281edf7c4bee5c2",
     "test_os_supervisor.m": "38c6603190bc3dbf0c0c5acf71440e9bc365bfb27349cb8b0266421f35d6287f",
     "plot_os_supervisor_timeline.m": "a2fbf001fe23b1feafea76ebacbc7e4063941aa07f8181ca57cbf6f7095ad15a",
-    "export_os_supervisor_timelines.m": "8cb6f41c259c32f228c72f0c5bbfe321ea965c918f6e85a5929bb171b10d2fa2",
-    "codex_e_os_supervisor.slx": "ee8eac4617850f75b859630e6cf14b98bedef09547f06c640a6fc2cf83abd0a8"
+    "export_os_supervisor_timelines.m": "241979329f45b3807aa6d86434340cf389d29bf4ae34cbad9e66799d5b0d1e67",
+    "os_supervisor_chart.slx": "09073a4b6f58c0e0103bc2b7d8991de80f6142b605f107b0ad7661bc2360f193"
   }
 }

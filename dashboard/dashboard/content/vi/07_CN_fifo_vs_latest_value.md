@@ -55,13 +55,13 @@ Hai chính sách cho ra cùng số kết quả mỗi giây. Toàn bộ sự khá
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: CN-T7, 5 lần chạy mỗi chính sách; dữ liệu gốc T7 chưa tìm thấy, hình chỉ dùng trung bình trong hw_tables.md.](img/07_fifo_latest.png)
 
 *SOURCE: CN-T7, 5 lần chạy mỗi chính sách; dữ liệu gốc T7 chưa tìm thấy, hình chỉ dùng trung bình trong hw_tables.md. Nguồn: `cn\rtp\report\hw_tables.md`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 Camera 30 fps, 5 lần chạy mỗi chính sách (SOURCE: `CN\report\hw_tables.md`, CN-T7). Khâu AI là một độ trễ giả lập 50 ms (SOURCE: `CN_PLAN.md` §1.2):
 

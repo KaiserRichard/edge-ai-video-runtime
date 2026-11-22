@@ -67,13 +67,13 @@ Vì sao hồi phục chậm (INFERRED từ quy tắc Python): tăng một bướ
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: Đã đo bitrate theo quality và phân bố kích thước gói nhận ở q30/run1; chưa có bằng chứng phần cứng cho đáp ứng ABR CN-T8.](img/06_quality_bitrate.png)
 
 *SOURCE: Đã đo bitrate theo quality và phân bố kích thước gói nhận ở q30/run1; chưa có bằng chứng phần cứng cho đáp ứng ABR CN-T8. Nguồn: `cn\rtp\report\hw_tables.md`; `cn\rtp\results\T5\q30\run1\receiver.csv`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 **CN-T8 chưa được chạy trên phần cứng.** Các con số về adaptive bitrate duy nhất hiện có đến từ mô phỏng trước đây của nhóm, nên bảng đầu tiên dưới đây là mô phỏng, không phải đo (SOURCE: `CN\report\sim_tables.md`, CN-T8, 5 seed; `CN_PLAN.md` §1.2 xác nhận "simulation only"):
 

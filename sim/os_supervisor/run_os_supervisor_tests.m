@@ -10,8 +10,8 @@ if ~isfolder(output)
 end
 assertFreeMemory();
 modelPath = build_os_supervisor();
-model = 'codex_e_os_supervisor';
-assert(~bdIsLoaded(model), 'codex_e:ModelBusy', 'Model name is already in use.');
+model = 'os_supervisor_chart';
+assert(~bdIsLoaded(model), 'os_supervisor:ModelBusy', 'Model name is already in use.');
 oldFileGen = Simulink.fileGenControl('getConfig');
 fileGenCleanup = onCleanup(@() Simulink.fileGenControl('setConfig', 'config', oldFileGen));
 Simulink.fileGenControl('set', 'CacheFolder', fullfile(root, 'cache'), ...
@@ -43,9 +43,9 @@ for c = 1:numel(cases)
     indices = [1; find(diff(state)~=0)+1];
     sequence = state(indices)';
     transitionMs = timeMs(indices)';
-    assert(isequal(sequence, scenario.expected), 'codex_e:StateSequence', ...
+    assert(isequal(sequence, scenario.expected), 'os_supervisor:StateSequence', ...
         '%s: actual sequence %s, expected %s', scenario.name, mat2str(sequence), mat2str(scenario.expected));
-    assert(all(abs(transitionMs-scenario.expectedMs)<1e-6), 'codex_e:TransitionTime', ...
+    assert(all(abs(transitionMs-scenario.expectedMs)<1e-6), 'os_supervisor:TransitionTime', ...
         '%s: transition ms %s, expected %s', scenario.name, mat2str(transitionMs), mat2str(scenario.expectedMs));
     assert(isequal(leds(:,1), double(state==1)), 'D4 must mean FRESH.');
     assert(isequal(leds(:,2), double(state==2)), 'D5 must mean HOLD.');
@@ -134,7 +134,7 @@ end
 
 function assertFreeMemory()
 [~, systemMemory] = memory;
-assert(systemMemory.PhysicalMemory.Available>5*1024^3, 'codex_e:LowRAM', ...
+assert(systemMemory.PhysicalMemory.Available>5*1024^3, 'os_supervisor:LowRAM', ...
     'Available physical RAM must be strictly above 5 GiB; no model is run.');
 end
 

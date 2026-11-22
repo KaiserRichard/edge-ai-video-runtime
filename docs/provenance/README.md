@@ -8,3 +8,8 @@ unversioned snapshots, not asserted to be in those Git commits.
 Private source locations and audit inventories are kept outside this repository.
 The telemetry patch is integrated once; base and patch inputs remain separately
 identified. Claude/Codex assistance is disclosed in ../AI_ASSISTANCE.md.
+
+On 22 November 2026 the OS supervisor Stateflow model was rebuilt from the
+same build script under the neutral name `os_supervisor_chart.slx` to remove an
+internal tool label from the model name; all eight scenarios pass again. Lesson
+comments and manifests had the same label replaced; hashes here are refreshed.

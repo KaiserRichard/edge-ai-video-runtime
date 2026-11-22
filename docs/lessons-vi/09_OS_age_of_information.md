@@ -75,7 +75,7 @@ Hai chính sách làm xong cùng số kết quả (khoảng 23 mỗi giây). FIF
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: E3B idle, bridge=latest, 3 lần chạy hợp lệ mỗi chính sách; AoI trung bình là trung vị qua lần chạy, AoI đỉnh là cực đại; pty, không phải MCU.](img/09_input_policy_aoi.png)
 
@@ -85,7 +85,7 @@ Hai chính sách làm xong cùng số kết quả (khoảng 23 mỗi giây). FIF
 
 *SOURCE: E3B idle r1, chỉ bản tin CRC hợp lệ; tuổi tăng giữa hai lần nhận và giảm theo capture mới nhất, cửa sổ 1 s được nêu rõ; dữ liệu pty. Nguồn: `docs/os-report\report_vi\pi_results\2026-10-30_os_t4_policy\E3B_P1_B0_idle_fifo_r1\pipeline\rx.csv` (các lần lặp cùng cấu hình; danh sách đầy đủ: `img/evidence_manifest.json`).*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 Chính sách phía đầu vào, idle, bridge = latest, mỗi loại 3 lần chạy hợp lệ (SOURCE: file tổng hợp OS-T4 nêu ở §3):
 

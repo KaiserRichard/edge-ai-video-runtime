@@ -1,7 +1,7 @@
 ﻿function export_os_supervisor_timelines()
 %EXPORT_OS_SUPERVISOR_TIMELINES Replot saved actual runs without resimulation.
 [~, systemMemory] = memory;
-assert(systemMemory.PhysicalMemory.Available>5*1024^3, 'codex_e:LowRAM', ...
+assert(systemMemory.PhysicalMemory.Available>5*1024^3, 'os_supervisor:LowRAM', ...
     'Available physical RAM must be strictly above 5 GiB before export.');
 root = fileparts(mfilename('fullpath'));
 output = fullfile(root, 'output');

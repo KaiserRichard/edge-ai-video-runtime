@@ -61,13 +61,13 @@ Kiểm tra kích thước gói của frame 0 (6 gói): `5 × 1212 + 164 = 6224 b
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: Sáu gói đầu có chung timestamp; bước timestamp của lần chạy Ethernet sạch dao động quanh 6000 tick.](img/01_rtp_metadata.png)
 
 *SOURCE: Sáu gói đầu có chung timestamp; bước timestamp của lần chạy Ethernet sạch dao động quanh 6000 tick. Nguồn: `cn\rtp\results\T3\loss5\run1\receiver.csv`; `cn\rtp\results\T2\eth_q75_640x480_15fps\run1\sender.csv`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 | Mục | Giá trị | Nguồn |
 |---|---|---|

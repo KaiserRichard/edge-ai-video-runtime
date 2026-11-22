@@ -70,13 +70,13 @@ mean burst = 1 / r       = 1 / 0.25                  = 4 packets
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: CN-T3/T5, 5 lần chạy mỗi cấu hình; các cột đều là số đo tổng hợp, payload 3000 byte bị IP chia thành ba mảnh.](img/05_netem_frame_loss.png)
 
 *SOURCE: CN-T3/T5, 5 lần chạy mỗi cấu hình; các cột đều là số đo tổng hợp, payload 3000 byte bị IP chia thành ba mảnh. Nguồn: `cn\rtp\report\hw_tables.md`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 Loss (SOURCE: `CN\report\hw_tables.md`, CN-T3, mỗi dòng 5 lần chạy; dữ liệu gốc trong `CN\results\T3\`):
 

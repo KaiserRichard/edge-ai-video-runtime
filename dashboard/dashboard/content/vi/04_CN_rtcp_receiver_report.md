@@ -65,13 +65,13 @@ Chu kỳ báo cáo: trong log, các RR cách nhau khoảng 1.00 s (SOURCE). RFC 
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: Loss tổng hợp RR và sequence gần cấu hình netem; loss từng khoảng RR trong run1 vẫn dao động và khác mẫu số với loss toàn lần chạy.](img/04_rtcp_loss.png)
 
 *SOURCE: Loss tổng hợp RR và sequence gần cấu hình netem; loss từng khoảng RR trong run1 vẫn dao động và khác mẫu số với loss toàn lần chạy. Nguồn: `cn\rtp\report\hw_tables.md`; `cn\rtp\results\T3\loss5\run1\receiver_rtcp.csv`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 Hai cách đếm loss độc lập cho kết quả trùng nhau ở mọi kịch bản (SOURCE: `CN\report\hw_tables.md`, CN-T3, mỗi kịch bản 5 lần chạy):
 

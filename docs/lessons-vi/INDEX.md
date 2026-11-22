@@ -1,6 +1,6 @@
 # Bộ bài học — CN đề tài 11 và đồ án môn OS (bản tiếng Việt)
 
-Bản tiếng Việt viết ngày 2026-11-16 bởi claude-b, dựa trên bản tiếng Anh ở thư mục cha (`..\INDEX.md`, `..\01_…10_*.md`). Bản tiếng Anh được giữ nguyên. Nếu hai bản khác nhau về con số, bản tiếng Anh là bản gốc.
+Bản tiếng Việt viết ngày 2026-11-16 với hỗ trợ của AI, dựa trên bản tiếng Anh ở thư mục cha (`..\INDEX.md`, `..\01_…10_*.md`). Bản tiếng Anh được giữ nguyên. Nếu hai bản khác nhau về con số, bản tiếng Anh là bản gốc.
 
 Mười bài ngắn cho người mới bắt đầu với hai đồ án môn học:
 

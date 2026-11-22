@@ -61,13 +61,13 @@ frame 2 was complete at t0 + 134.6 ms  →  98.6 ms before its deadline  →  st
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: CN-T4, trung bình của 5 lần chạy mỗi điểm; chỉ có bảng tổng hợp, chưa có CSV gốc T4.](img/03_playout_tradeoff.png)
 
 *SOURCE: CN-T4, trung bình của 5 lần chạy mỗi điểm; chỉ có bảng tổng hợp, chưa có CSV gốc T4. Nguồn: `cn\rtp\report\hw_tables.md`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 netem `delay 20ms 20ms distribution normal`, 5 lần chạy mỗi dòng (SOURCE: `CN\report\hw_tables.md`, CN-T4):
 

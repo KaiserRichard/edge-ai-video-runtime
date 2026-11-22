@@ -74,7 +74,7 @@ Thư viện làm việc khác: nó phát lại các thời gian inference **đã
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: E2, trung vị P50/P99 qua 3 lần chạy hợp lệ; service gồm chờ đầu vào và xử lý, liên kết pty, không phải UART/MCU.](img/08_contention_summary.png)
 
@@ -84,7 +84,7 @@ Thư viện làm việc khác: nó phát lại các thời gian inference **đã
 
 *SOURCE: CSV infer của E2 P0/P1, r1–r3 hợp lệ; lấy t_done − t_input trên cùng đồng hồ, gộp frame để vẽ histogram; đây là service, gồm cả chờ đầu vào. Nguồn: `docs/os-report\report_vi\pi_results\2026-10-30_os_t3_contention\E2_P0_B0_idle_latest_r1\pipeline\infer.csv` (các lần lặp cùng cấu hình; danh sách đầy đủ: `img/evidence_manifest.json`).*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 Độ trễ đánh thức của timer, `cyclictest`, đơn vị µs, mỗi ô 3 lần chạy 120 s (SOURCE: `OS\docs\STAGE_REPORT.md`, "Timer wake-up diagnostic"; dữ liệu gốc: `OS\results\2026-10-11_cyclictest\`):
 

@@ -56,13 +56,13 @@ Hãy để ý dòng cuối. Các gói của cùng một frame có chung timestam
 
 ## 5. Bằng chứng đo thực tế
 
-<!-- codex-e:figures-measured-start -->
+<!-- figures-measured-start -->
 
 ![SOURCE: Jitter ghi theo từng gói, đổi từ tick sang ms bằng cách chia 90; hai ô dùng thang tung độ riêng.](img/02_jitter_time.png)
 
 *SOURCE: Jitter ghi theo từng gói, đổi từ tick sang ms bằng cách chia 90; hai ô dùng thang tung độ riêng. Nguồn: `cn\rtp\results\T2\eth_q75_640x480_15fps\run1\receiver.csv`; `cn\rtp\results\T3\loss5\run1\receiver.csv`*
 
-<!-- codex-e:figures-measured-end -->
+<!-- figures-measured-end -->
 
 | Thiết lập netem | J đo được (ms), 5 lần chạy | Nguồn |
 |---|---|---|

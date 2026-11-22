@@ -3,11 +3,11 @@ function modelPath = build_os_supervisor()
 % Inputs are accepted UART reception timestamps, not raw UART frames.
 % No other model, figure, base variable, worker, or MATLAB process is closed.
 [~, systemMemory] = memory;
-assert(systemMemory.PhysicalMemory.Available>5*1024^3, 'codex_e:LowRAM', ...
+assert(systemMemory.PhysicalMemory.Available>5*1024^3, 'os_supervisor:LowRAM', ...
     'Available physical RAM must be strictly above 5 GiB before building.');
 root = fileparts(mfilename('fullpath'));
-model = 'codex_e_os_supervisor';
-assert(~bdIsLoaded(model), 'codex_e:ModelBusy', ...
+model = 'os_supervisor_chart';
+assert(~bdIsLoaded(model), 'os_supervisor:ModelBusy', ...
     'The model name is already loaded. Save/rename it before rebuilding.');
 load_system('simulink');
 load_system('sflib');
