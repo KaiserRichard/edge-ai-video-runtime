@@ -102,6 +102,61 @@ def test_frame_incomplete_omits_offset(tmp_path):
         rx.close()
 
 
+def test_video_telemetry_callback_preserves_ai_csv_and_rate_limit(tmp_path, monkeypatch):
+    import base64
+    from rtp.playout import FRAME_FIELDS
+    monkeypatch.setattr("rtp.receiver.time.monotonic_ns", lambda: 1_000_000_000)
+    sink, calls = Sink(), []
+    rx = Receiver(tmp_path, port=0, telemetry=sink, callback=lambda *args: calls.append(args))
+    try:
+        jpeg = b"\xff\xd8small-jpeg\xff\xd9"
+        rx._completed_frame(1, 90, jpeg, 123)
+        rx._completed_frame(2, 180, jpeg, 456)
+        videos = [data for kind, data in sink.events if kind == "video"]
+        assert len(videos) == 1
+        assert videos[0] == dict(jpeg_b64=base64.b64encode(jpeg).decode(), frame_id=1, status="ok")
+        assert len(calls) == 2
+        assert rx.telemetry_video_oversize_skips == 0
+        assert rx.logs["frames_rx"].writer.fieldnames == FRAME_FIELDS
+        assert (tmp_path / "frames_rx.csv").read_text().splitlines()[0] == ",".join(FRAME_FIELDS)
+        assert (tmp_path / "receiver.csv").read_text().splitlines()[0] == "seq,rtp_ts,frame_id,marker,bytes,t_arrival_rx_ns,transit_ts_units,jitter_ts_units"
+        assert (tmp_path / "rtcp.csv").read_text().splitlines()[0] == "t_mono_ns,dir,type,ssrc,fraction_lost,cum_lost,ext_high_seq,jitter,lsr,dlsr,rtt_ms"
+    finally:
+        rx.close()
+
+
+def test_video_telemetry_oversize_skips_and_zero_disables(tmp_path):
+    sink = Sink()
+    rx = Receiver(tmp_path / "large", port=0, telemetry=sink)
+    try:
+        rx._completed_frame(1, 1, b"x" * 41_251, 1)
+        assert rx.telemetry_video_oversize_skips == 1
+        assert not [e for e in sink.events if e[0] == "video"]
+    finally:
+        rx.close()
+    disabled_sink = Sink()
+    disabled = Receiver(tmp_path / "disabled", port=0, telemetry=disabled_sink,
+                        telemetry_video_fps=0)
+    try:
+        disabled._completed_frame(1, 1, b"jpeg", 1)
+        assert not [e for e in disabled_sink.events if e[0] == "video"]
+    finally:
+        disabled.close()
+
+
+def test_video_emit_does_not_break_callback_when_telemetry_fails(tmp_path):
+    calls = []
+    class Broken:
+        def emit(self, *args):
+            raise OSError("dashboard unavailable")
+    rx = Receiver(tmp_path, port=0, telemetry=Broken(), callback=lambda *args: calls.append(args))
+    try:
+        rx._completed_frame(4, 5, b"jpeg", 6)
+        assert calls == [(4, 5, b"jpeg", 6)]
+    finally:
+        rx.close()
+
+
 def test_rate_trailing_second_and_unknown_quality():
     tx = Sender.__new__(Sender)
     from collections import deque

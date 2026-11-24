@@ -18,6 +18,19 @@ RFC 2435. Latency must stay in a single monotonic clock domain. Optional ONNX
 inference requires separately supplied runtime and model weights.
 Telemetry is opt-in and observational; dashboard failure must not stop transport.
 
+Live dashboard video demo (run these in three terminals from the repository
+root; video appears in the dashboard from completed JPEG frames):
+
+```powershell
+$env:PYTHONPATH = "$PWD\dashboard;$PWD\cn\rtp"
+.\.venv\Scripts\python -m dashboard --mode live
+.\.venv\Scripts\python -m rtp receiver --out-dir _ticket\output\rx --duration 12 --telemetry 127.0.0.1 --telemetry-session demo
+.\.venv\Scripts\python -m rtp sender --host 127.0.0.1 --port 5004 --source synthetic --duration 8 --out-dir _ticket\output\tx --telemetry 127.0.0.1 --telemetry-session demo
+```
+
+Open http://127.0.0.1:8080/. The receiver defaults to at most 5 video events
+per second; `--telemetry-video-fps 0` disables JPEG telemetry.
+
 Hardware: `runner/run_scenario.py` uses reviewed configs and may require netem,
 SSH and privileges. Replace loopback examples explicitly for your own lab.
 No lab hostname or private network setting is bundled. Read the
