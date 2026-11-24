@@ -8,6 +8,7 @@ must be nonblocking. Default: discard. AIRS may be sent from an AI worker thread
 from __future__ import annotations
 
 import argparse
+import base64
 from contextlib import ExitStack
 import math
 from pathlib import Path
@@ -32,8 +33,15 @@ RECEIVER_FIELDS = "seq,rtp_ts,frame_id,marker,bytes,t_arrival_rx_ns,transit_ts_u
 class Receiver:
     def __init__(self, out_dir, *, bind="127.0.0.1", port=5004,
                  playout_ms=100.0, late_window_ms=1000.0, rtcp_interval=1.0,
-                 callback=None, ssrc=None, rtcp_filename="rtcp.csv", telemetry=None):
+                 callback=None, ssrc=None, rtcp_filename="rtcp.csv", telemetry=None,
+                 telemetry_video_fps=5):
+        if not math.isfinite(telemetry_video_fps) or telemetry_video_fps < 0:
+            raise ValueError("telemetry video FPS must be finite and nonnegative")
         self.telemetry = telemetry
+        self.telemetry_video_interval_ns = (round(1e9 / telemetry_video_fps)
+                                            if telemetry_video_fps else None)
+        self.telemetry_video_last_ns = None
+        self.telemetry_video_oversize_skips = 0
         if not math.isfinite(rtcp_interval):
             raise ValueError("RTCP interval must be finite")
         self.interval_ns = round(fixed_rtcp_interval(rtcp_interval) * 1e9)
@@ -57,6 +65,8 @@ class Receiver:
             self.resources.callback(self.logs["rtcp"].close)
             self.playout = PlayoutBuffer(playout_ms, late_window_ms=late_window_ms,
                 callback=callback, on_row=self._frame_row)
+            self._playout_callback = self.playout.callback
+            self.playout.callback = self._completed_frame
         except BaseException:
             self.resources.close()
             raise
@@ -69,7 +79,30 @@ class Receiver:
                         buffer_frames=len(self.playout.frames))
             if row["t_complete_rx_ns"] is not None:
                 data["arrival_offset_ms"] = (row["t_complete_rx_ns"] - row["t_playout_rx_ns"]) / 1e6
-            self.telemetry.emit("frame", data)
+            try:
+                self.telemetry.emit("frame", data)
+            except Exception:
+                pass
+
+    def _completed_frame(self, frame_id, rtp_ts, jpeg_bytes, t_complete_rx_ns):
+        # Preserve the caller's callback (including edge AI) and keep telemetry
+        # strictly observational if its emitter fails.
+        self._playout_callback(frame_id, rtp_ts, jpeg_bytes, t_complete_rx_ns)
+        if self.telemetry is None or self.telemetry_video_interval_ns is None:
+            return
+        now = time.monotonic_ns()
+        if (self.telemetry_video_last_ns is not None and
+                now - self.telemetry_video_last_ns < self.telemetry_video_interval_ns):
+            return
+        jpeg_b64 = base64.b64encode(jpeg_bytes).decode("ascii")
+        if len(jpeg_b64) > 55_000:
+            self.telemetry_video_oversize_skips += 1
+            return
+        self.telemetry_video_last_ns = now
+        try:
+            self.telemetry.emit("video", dict(jpeg_b64=jpeg_b64, frame_id=frame_id, status="ok"))
+        except Exception:
+            pass
 
     @property
     def port(self):
@@ -228,6 +261,8 @@ def main(argv=None):
     parser.add_argument("--ai-service-ms", type=float, default=0)
     parser.add_argument("--model", default="offline-bundle/mobilenetv2-12.onnx")
     parser.add_argument("--threads", type=int, default=1)
+    parser.add_argument("--telemetry-video-fps", type=float, default=5,
+                        help="maximum completed JPEG telemetry rate; 0 disables")
     add_arguments(parser, 5007)
     args = parser.parse_args(argv)
     receiver = edge = telemetry = None
@@ -235,14 +270,15 @@ def main(argv=None):
         telemetry = from_arguments(args, parser, "receiver")
         receiver = Receiver(args.out_dir, bind=args.bind, port=args.port,
             playout_ms=args.playout_ms, late_window_ms=args.late_window_ms,
-            rtcp_interval=args.rtcp_interval, rtcp_filename=args.rtcp_csv, telemetry=telemetry)
+            rtcp_interval=args.rtcp_interval, rtcp_filename=args.rtcp_csv, telemetry=telemetry,
+            telemetry_video_fps=args.telemetry_video_fps)
         if args.ai != "off":
             from .edge_ai import EdgeAI
             model = "synthetic" if args.ai == "synthetic" else args.model
             edge = EdgeAI(args.ai_policy, model, args.threads, receiver.send_result,
                           service_ms=args.ai_service_ms,
                           ai_csv=Path(args.out_dir) / "ai.csv", telemetry=telemetry)
-            receiver.playout.callback = edge.submit
+            receiver._playout_callback = edge.submit
         print(f"READY RTP={receiver.port} RTCP={receiver.port + 1}", flush=True)
         count = receiver.run(args.duration, exit_on_bye=args.exit_on_bye)
         print(f"received {count} RTP packets; malformed={receiver.malformed}", flush=True)
