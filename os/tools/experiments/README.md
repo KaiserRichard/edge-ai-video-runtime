@@ -345,7 +345,8 @@ PYTHON=/opt/edge-runtime/osbuild/venv/bin/python bash tools/experiments/e3_real.
 
 Output must be new. Arguments are `<new-outdir> [reps=3] [seconds=60] --model PATH`.
 `PYTHON` selects ONNX as in `e_campaign`; one inference thread, source period
-100 ms. Default rearm is `bash $HOME/osbuild/rearm_via_mac.sh`, parsed as argv
+100 ms. Default rearm is `bash <os>/scripts/stm32/reset.sh` (local ST-LINK via
+openocd on the Pi; the old Mac helper is no longer the default), parsed as argv
 with shlex, executed before **every** run with a 15 s timeout, and retained in
 `rearm.log`. FAILSAFE is latched, so each run requires successful rearm/reset.
 The script does not create or change the user's rearm procedure.
@@ -358,7 +359,23 @@ source/bridge mlock, stress-ng memrate pinned independently to CPUs2 and3.
 Serial is `/dev/ttyAMA0`, 921600 baud; echo period 100 ms supports a fit near
 each report. Stress warmup is 5 s on loaded runs; cooldown is 5 s per run.
 
-Wall-time estimate: **18 minutes of measured windows; budget about 27 minutes
+Options added for a single-operator hardware day:
+
+- `--cells LIST` runs a subset: a load (`B2_memrate_c23`), a policy pair
+  (`fifo-latest`) or a full cell (`B2_memrate_c23/fifo-latest`), comma
+  separated. `--cells B2_memrate_c23` with 5 repeats = 15 runs (~23 min).
+  The planned run count is printed before anything starts.
+- `--serial DEV` (default `/dev/ttyAMA0`) selects the Pi UART node, e.g. when
+  the Pi 5 exposes the header UART under another name. The summary accepts any
+  real `/dev` UART recorded in the run config but still rejects PTYs.
+- `analysis/e3_real_summary.py CAMPAIGN --outdir DIR` re-summarizes without
+  overwriting `CAMPAIGN/summary/`.
+
+```bash
+PYTHON=/opt/edge-runtime/osbuild/venv/bin/python bash tools/experiments/e3_real.sh results/e3-real-002 5 60 --model /opt/edge-runtime/osbuild/wheels/mobilenetv2-12.onnx --cells B2_memrate_c23
+```
+
+Wall-time estimate (default 6 cells × 3): **18 minutes of measured windows; budget about 27 minutes
 plus initial build and model startup** (90 s per run including startup/rearm,
 drain, metadata and cooldown allowances). Runtime depends on the existing rearm
 procedure and ONNX startup. The runner prints the command and estimate.

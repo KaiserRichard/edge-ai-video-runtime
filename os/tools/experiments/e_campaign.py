@@ -216,7 +216,7 @@ def execute_run(args, experiment, condition):
                '--source-cpu', '1', '--infer-cpu', '0', '--bridge-cpu', '1',
                '--run-dir', str(run / 'pipeline')]
     if experiment == 'E3_REAL':
-        command += ['--serial', '/dev/ttyAMA0', '--baud', '921600', '--echo-ms', '100', '--fresh-timeout', str(getattr(args, 'fresh_timeout', 30)),
+        command += ['--serial', getattr(args, 'serial', '/dev/ttyAMA0'), '--baud', '921600', '--echo-ms', '100', '--fresh-timeout', str(getattr(args, 'fresh_timeout', 30)),
                     '--reset-command', args.rearm_command]
     if args.model:
         command += ['--model', str(args.model)]

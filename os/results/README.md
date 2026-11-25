@@ -34,7 +34,7 @@ this repository contains no captures. Read analyzer comparisons with
 
 ## Validity rule versions (read before re-running any summary)
 
-The summaries stored in these folders were produced with the validity rules in force when each run was recorded (rule set v1). The final code review (docs/STAGE_REPORT.md, "Validity rule versions") tightened the rules (v2): monitor samples must carry RAW timestamps, cover the whole measurement window with gaps of at most 1.5 s, stressors must be shown alive during measurement, and clock fits older than 5 s may not map MCU time.
+The summaries stored in these folders were produced with the validity rules in force when each run was recorded (rule set v1). The final code review (docs/STAGE_REPORT.md, "Validity rule versions") tightened the rules (v2): monitor samples must carry RAW timestamps, cover the whole measurement window with gaps of at most 1.5 s, stressors must be shown alive during measurement, and clock fits older than 5 s may not map MCU time. The real-UART summary (`analysis/e3_real_summary.py`) is stricter than this text: monitor gaps of at most 0.75 s (0.5 s monitor period) and clock fits at most 2 s away, with fit RMS ≤ 200 µs.
 
 Re-running the v2 analysis on the stored data (read-only replay, 2026-10-13):
 
