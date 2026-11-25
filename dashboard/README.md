@@ -14,8 +14,8 @@ from the repository root; video appears in the dashboard as JPEG frames arrive):
 ```powershell
 $env:PYTHONPATH = "$PWD\dashboard;$PWD\cn\rtp"
 .\.venv\Scripts\python -m dashboard --mode live
-.\.venv\Scripts\python -m rtp receiver --out-dir _ticket\output\rx --duration 12 --telemetry 127.0.0.1 --telemetry-session demo
-.\.venv\Scripts\python -m rtp sender --host 127.0.0.1 --port 5004 --source synthetic --duration 8 --out-dir _ticket\output\tx --telemetry 127.0.0.1 --telemetry-session demo
+.\.venv\Scripts\python -m rtp receiver --out-dir out\rx --duration 12 --telemetry 127.0.0.1 --telemetry-session demo
+.\.venv\Scripts\python -m rtp sender --host 127.0.0.1 --port 5004 --source synthetic --duration 8 --out-dir out\tx --telemetry 127.0.0.1 --telemetry-session demo
 ```
 
 Open http://127.0.0.1:8080/. The receiver sends at most five JPEG telemetry

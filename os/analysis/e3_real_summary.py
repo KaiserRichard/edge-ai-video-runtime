@@ -112,8 +112,10 @@ def summarize_run(run):
     try:
         p = run / 'pipeline'
         pipeline_config = e_summary.read_json(p / 'config.json')
-        if pipeline_config.get('serial') != '/dev/ttyAMA0' or pipeline_config.get('baud') != 921600:
-            raise ValueError('requires /dev/ttyAMA0 at 921600')
+        serial = str(pipeline_config.get('serial') or '')
+        # Any real Pi UART node (ttyAMA0, ttyAMA10, serial0...) is accepted; PTYs are not.
+        if not serial.startswith('/dev/') or serial.startswith(('/dev/pts/', '/dev/ptmx'))                 or pipeline_config.get('baud') != 921600:
+            raise ValueError('requires a real /dev serial UART (not a PTY) at 921600')
         if pipeline_config.get('stage') != 'onnx' or config.get('profile') != 'P1':
             raise ValueError('requires ONNX stage and P1')
         start, end = [int((p / name).read_text()) for name in ('window_start_ns', 'window_end_ns')]
@@ -222,13 +224,13 @@ def latex(records):
     return '\n'.join(lines + [r'\end{tabular}']) + '\n'
 
 
-def write_summary(campaign):
+def write_summary(campaign, outdir=None):
     runs = [summarize_run(p.parent) for p in sorted(campaign.glob('E3_REAL*/condition.json'))]
     if not runs:
         raise ValueError('no E3_REAL runs')
     conditions = aggregate(runs, campaign)
-    out = campaign / 'summary'
-    out.mkdir(exist_ok=True)
+    out = Path(outdir) if outdir else campaign / 'summary'
+    out.mkdir(parents=True, exist_ok=True)
     for name, records in (('per_run', runs), ('per_condition', conditions)):
         e_summary.csv_write(out / f'{name}.csv', records)
         (out / f'{name}.tex').write_text(latex(records))
@@ -252,9 +254,10 @@ def write_summary(campaign):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('campaign', type=Path)
+    parser.add_argument('--outdir', type=Path, help='write summary here instead of <campaign>/summary')
     args = parser.parse_args()
-    runs, _ = write_summary(args.campaign)
-    print(f"{EVIDENCE}; {sum(r['valid'] for r in runs)}/{len(runs)} valid; {args.campaign / 'summary'}")
+    runs, _ = write_summary(args.campaign, args.outdir)
+    print(f"{EVIDENCE}; {sum(r['valid'] for r in runs)}/{len(runs)} valid; {args.outdir or args.campaign / 'summary'}")
     return 0 if all(r['valid'] for r in runs) else 1
 
 

@@ -1,6 +1,6 @@
 """Small RTCP receiver-report AIMD controller for JPEG senders.
 
-Loss thresholds follow ticket ABR1. A rising jitter report pauses additive
+Loss thresholds follow the ABR design. A rising jitter report pauses additive
 recovery; three low-loss reports with flat or falling jitter are required.
 """
 from __future__ import annotations

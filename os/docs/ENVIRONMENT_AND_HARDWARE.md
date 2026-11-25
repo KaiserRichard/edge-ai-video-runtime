@@ -105,25 +105,11 @@ Proposed alignment: the Pi toggles the sync GPIO and records its
 capture. Pairs of (Linux time, STM32 time) give offset and drift. Round-trip
 echo over UART is the fallback (half-RTT bound, no extra wire).
 
-## 7. Agent workflow (Claude conductor + Codex workers)
+## 7. Development machine
 
-Roles:
-- **Claude (conductor)** runs as a Remote Control session on the Mac, in the local clone
-  of this repo. It splits work into bounded tickets, runs Codex on them, reviews diffs,
-  runs tests, and is the only agent that talks to the Pi (over SSH) and to hardware.
-- **Codex (workers)** run with `codex exec` on code-only tickets, each in its own git
-  worktree and branch so parallel workers never touch the same checkout. Workers do
-  not SSH to the Pi; the conductor deploys and runs experiments.
-
-### Mac prerequisites (one time, no hardware)
-1. Clone the repo to `~/Desktop/OS/OS-project/heterogeneous-edge-ai-os` (the path `AGENTS.md` names)
-   and check out `claude/project-thread-eq9yql`.
-2. Install the Codex CLI (`npm install -g @openai/codex`). Log in each account into its own
-   home so they never overwrite each other:
-   `CODEX_HOME=~/.codex-a codex login`, `CODEX_HOME=~/.codex-b codex login`, ...
-3. STM32 toolchain: `brew install --cask gcc-arm-embedded` and `brew install open-ocd stlink`.
-4. SSH key for the Pi: `ssh-keygen -t ed25519` if `~/.ssh/id_ed25519.pub` does not exist yet.
-5. Start Remote Control from that folder (`claude remote-control`) so the conductor can work there.
+### Prerequisites (one time, no hardware)
+1. STM32 toolchain: `brew install --cask gcc-arm-embedded` and `brew install open-ocd stlink` (macOS), or the distribution packages on Linux.
+2. SSH key for the Pi: `ssh-keygen -t ed25519` if `~/.ssh/id_ed25519.pub` does not exist yet.
 
 ### Pi headless setup (session P0). Bring: Pi 5, 27 W PSU, active cooler, microSD, microSD reader for the Mac.
 1. Raspberry Pi Imager on the Mac: Ubuntu Server 24.04 LTS 64-bit. Settings: hostname `HOST`,

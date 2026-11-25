@@ -1,0 +1,41 @@
+{
+  "evidence": "COMPUTED synthetic host fake buses; no physical shared-bus contention",
+  "host": "Linux 6.18.58.1-microsoft-standard-WSL2",
+  "runs": [
+    {
+      "display": false,
+      "samples": 800,
+      "release_lateness": {
+        "count": 800,
+        "overflow": 0,
+        "min_us": 75.253,
+        "mean_us": 134.233,
+        "p50_us": 121,
+        "p95_us": 235,
+        "p99_us": 280,
+        "max_us": 916.065
+      },
+      "missed_releases": 0
+    },
+    {
+      "display": true,
+      "samples": 800,
+      "release_lateness": {
+        "count": 800,
+        "overflow": 0,
+        "min_us": 60.117,
+        "mean_us": 108.462,
+        "p50_us": 101,
+        "p95_us": 157,
+        "p99_us": 211,
+        "max_us": 351.532
+      },
+      "missed_releases": 0
+    }
+  ],
+  "display": {
+    "frames": 60,
+    "achieved_fps": 20.0,
+    "bytes": 3322
+  }
+}

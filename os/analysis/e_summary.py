@@ -289,7 +289,7 @@ def write_summary(campaign, outdir=None):
         'Validity requires complete monitor and applied-settings evidence, successful pipeline/stressors, no live bits (0xF), '
         'and no new sticky bits. Pre-existing sticky flags alone do not exclude a run. Exclusions remain on disk. '
         'CSV tables retain the exact deck columns; E2/E3 CSV row order and condition identities are in per_condition.csv; '
-        'LaTeX adds matched-condition labels and valid repeat counts. Three repeats are the ticket default, '
+        'LaTeX adds matched-condition labels and valid repeat counts. Three repeats are the default campaign setting, '
         'below the deck acceptance gate of five valid repeats. P2 quotas: not done.\n')
     return runs, conditions
 

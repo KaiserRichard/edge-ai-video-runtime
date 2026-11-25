@@ -106,7 +106,7 @@ else:
 
 
 def _endpoint_command(template: str, role: str, values: dict, run_dir: str,
-                      seed: int | None) -> str:
+                      seed: int | None, ai: str = "off") -> str:
     """Translate NET1's historical module templates to the unified RTP CLI."""
     rendered = template.format(**values)
     tokens = shlex.split(rendered)
@@ -122,13 +122,14 @@ def _endpoint_command(template: str, role: str, values: dict, run_dir: str,
             i = tokens.index("--playout-ms")
             del tokens[i:i + 2]
     else:
-        for option in ("--policy", "--rr-interval"):
-            if option in tokens:
-                i = tokens.index(option)
-                del tokens[i:i + (3 if option == "--policy" else 2)]
+        # --rr-interval is a single-valued receiver option and is kept (CN-T8
+        # needs it); only the legacy two-value --policy sweep is removed.
+        if "--policy" in tokens:
+            i = tokens.index("--policy")
+            del tokens[i:i + 3]
     tokens.extend(("--out-dir", run_dir, "--rtcp-csv", f"{role}_rtcp.csv"))
     if role == "receiver":
-        tokens.extend(("--duration", str(values["receiver_duration_s"]), "--ai", "off"))
+        tokens.extend(("--duration", str(values["receiver_duration_s"]), "--ai", ai))
     elif seed is not None:
         tokens.extend(("--seed", str(seed)))
     return "env PYTHONPATH=rtp${PYTHONPATH:+:$PYTHONPATH} " + " ".join(shlex.quote(t) for t in tokens)
@@ -139,6 +140,11 @@ def plan(config: dict, *, output: Path, repetitions: int | None = None) -> list[
     sender_host = config.get("links", {}).get("sender", "local")
     receiver_host = config.get("links", {}).get("receiver", "local")
     interface = config.get("interface", "eth0")
+    # Optional privilege prefix for tc/tcpdump on hosts where the SSH user is
+    # not root, e.g. ``privilege: "sudo -n"``. Default: none (old behaviour).
+    priv = str(config.get("privilege", "")).strip()
+    pre = (priv + " ") if priv else ""
+    receiver_ai = str(config.get("receiver_ai", "off"))
     commands: list[str] = []
     for rep in range(1, count + 1):
         run_dir = str(output / config["scenario"] / config.get("config", "default") / f"run{rep}")
@@ -156,21 +162,38 @@ def plan(config: dict, *, output: Path, repetitions: int | None = None) -> list[
             "git rev-parse HEAD", "uname -r", "vcgencmd get_throttled 2>/dev/null || true",
             "iw dev wlan0 link 2>/dev/null || true"))
         commands.append(_service_start(receiver_host, "tcpdump",
-            f"tcpdump -i {shlex.quote(config.get('capture_interface', 'any'))} -s 128 -U -w "
+            f"{pre}tcpdump -i {shlex.quote(config.get('capture_interface', 'any'))} -s 128 -U -w "
             f"{shlex.quote(run_dir + '/capture.pcap')}", run_dir))
         commands.append("sleep 1")
         commands.append(_service_start(receiver_host, "receiver",
-            _endpoint_command(config["commands"]["receiver"], "receiver", values, run_dir, values["seed"]), run_dir))
-        steps_script = ["set -e", "cleanup() { " + netem_remove(interface) + "; }",
-                        "trap cleanup EXIT INT TERM", netem_remove(interface)]
+            _endpoint_command(config["commands"]["receiver"], "receiver", values, run_dir, values["seed"],
+                              receiver_ai), run_dir))
+        # steps.csv: the netem schedule as offsets from sender start (offset 0 =
+        # sender launch). Analysis anchors these offsets on each host's own clock.
+        offset = 0.0
+        step_rows = ["label,netem,start_offset_s,end_offset_s"]
+        for k, step in enumerate(config["steps"]):
+            end = offset + float(step["duration_s"])
+            line = str(step.get("netem", "")).strip().replace(",", " ")
+            step_rows.append(f"{step.get('label', f'step{k}_' + line.replace(' ', '_'))},{line},{offset:g},{end:g}")
+            offset = end
+        commands.append("printf '%s\\n' " + " ".join(shlex.quote(r) for r in step_rows)
+                        + " > " + shlex.quote(run_dir + "/steps.csv"))
+        commands.append("printf '%s\\n' " + shlex.quote(json.dumps(
+            {"scenario": config["scenario"], "config": config.get("config", "default"),
+             "repetition": rep, "seed": values["seed"], "steps": config["steps"],
+             "links": config.get("links", {})}, separators=(",", ":")))
+            + " > " + shlex.quote(run_dir + "/args.json"))
+        steps_script = ["set -e", "cleanup() { " + pre + netem_remove(interface) + "; }",
+                        "trap cleanup EXIT INT TERM", pre + netem_remove(interface)]
         sender_command = _endpoint_command(config["commands"]["sender"], "sender", values, run_dir, values["seed"])
         steps_script.append(f"{sender_command} >{shlex.quote(run_dir + '/sender.log')} 2>&1 & sender_pid=$!")
         for step in config["steps"]:
             line = str(step.get("netem", "")).strip()
             if line:
-                steps_script.append(netem_replace(interface, line))
+                steps_script.append(pre + netem_replace(interface, line))
             else:
-                steps_script.append(netem_remove(interface))
+                steps_script.append(pre + netem_remove(interface))
             steps_script.append("sleep " + shlex.quote(str(float(step["duration_s"]))))
         steps_script.append("wait $sender_pid")
         commands.append(_ssh(sender_host, "sh -lc " + shlex.quote("; ".join(steps_script))))
@@ -185,11 +208,13 @@ def plan(config: dict, *, output: Path, repetitions: int | None = None) -> list[
             "with (d/'rtcp.csv').open('w',newline='') as f:\n" \
             " w=csv.DictWriter(f,fieldnames=header); w.writeheader(); w.writerows(sorted(rows,key=lambda x:int(x['t_mono_ns'])))\n"
         merge_rtcp = "python3 -c " + shlex.quote(merge_code) + " " + shlex.quote(run_dir)
-        commands.append(merge_rtcp)
         commands.append(_metadata(sender_host, run_dir, config, rep, values["seed"], final=True))
-        if receiver_host not in ("local", "localhost", None):
-            commands.append(f"scp {shlex.quote(receiver_host + ':' + run_dir + '/capture.pcap')} "
-                            f"{shlex.quote(run_dir + '/capture.pcap')}")
+        # Two-host runs: copy every log from each remote host into the local run
+        # directory before merging (previously only capture.pcap was fetched).
+        for host in dict.fromkeys((sender_host, receiver_host)):
+            if host not in ("local", "localhost", None):
+                commands.append(f"scp -q {shlex.quote(host + ':' + run_dir)}/'*' {shlex.quote(run_dir)}/")
+        commands.append(merge_rtcp)
     return commands
 
 
@@ -209,7 +234,8 @@ def execute(config: dict, commands: list[str], *, output: Path, dry_run: bool) -
         for command in commands:
             _run(command, dry_run=False)
     finally:
-        _run(_ssh(sender_host, netem_remove(interface)), dry_run=False)
+        priv = str(config.get("privilege", "")).strip()
+        _run(_ssh(sender_host, (priv + " " if priv else "") + netem_remove(interface)), dry_run=False)
 
 
 def main(argv: list[str] | None = None) -> int:

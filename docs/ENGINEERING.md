@@ -18,5 +18,5 @@ evidence roots. Reject traversal and symlink escapes. Documentation should use
 relative paths and explain missing optional evidence.
 
 These stable rules summarize useful OS/CN agent instructions, camera/protocol
-tickets, dashboard design notes and simulation task notes. Raw agent scheduling,
+design notes, dashboard design notes and simulation task notes. Raw agent scheduling,
 personal paths and private coordination records are intentionally excluded.

@@ -16,7 +16,7 @@ transitions during injected faults. FLAGGED real-UART observations now extend th
 They do not establish clean physical AoI, a worst-case reaction bound, or robot safety.
 
 This report fulfils the stage-report purpose in `docs/STAGE_PI_ONLY_BRIEF.md`,
-section 2.6, using the filename requested for this ticket. It includes later
+section 2.6. It includes later
 hardware evidence. `docs/SYSTEM_GUIDE.md` and `docs/ROADMAP.md` describe the plan;
 their older completion markers are not used as proof of the present implementation.
 The scope remains the OS mechanisms in `PROJECT.md`: scheduling, contention,
@@ -33,7 +33,7 @@ IPC, freshness, and independent supervision. Inference is a workload.
 | ASSUMED | A configured experimental choice or provisional allowance, not a measured bound. |
 | UNKNOWN | Missing evidence, an unperformed experiment, or an unresolved calibration. |
 
-Sources: `PROJECT.md`; `docs/STAGE_PI_ONLY_BRIEF.md`; `results/2026-10-11_cyclictest/SUMMARY.md`; `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–12. The label definitions above also follow this ticket's requested vocabulary.
+Sources: `PROJECT.md`; `docs/STAGE_PI_ONLY_BRIEF.md`; `results/2026-10-11_cyclictest/SUMMARY.md`; `results/2026-10-11_e1_e2_e3_pty/20261008T103412Z_e_onnx/summary/README.md`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–12. The label definitions above follow the stage-report vocabulary.
 
 Full source paths are relative to the main repository root. Bare sibling filenames
 in a source list use the directory of the preceding full path; braces and globs
@@ -420,7 +420,7 @@ reference events. Sources: `results/2026-10-12_f4_extra/{20261012T102112Z_f4,202
 
 | Problem | Trace, correction, and remaining uncertainty |
 |---|---|
-| Cyclictest `-p 0` silently selected SCHED_FIFO | The initial incident is reported in this ticket; the supplied final summary retains the corrected campaign rather than its original erroneous numbers. Correction: explicit `--policy=other` for P0 and `--policy=fifo` for P1, plus per-thread `sched_check.txt`. MEASURED final P0 threads are TS and P1 measured threads FF. No initial misconfigured latency is reported. |
+| Cyclictest `-p 0` silently selected SCHED_FIFO | The initial incident was reported during validation; the supplied final summary retains the corrected campaign rather than its original erroneous numbers. Correction: explicit `--policy=other` for P0 and `--policy=fifo` for P1, plus per-thread `sched_check.txt`. MEASURED final P0 threads are TS and P1 measured threads FF. No initial misconfigured latency is reported. |
 | PSU under-voltage contaminated workload comparisons | Continuous live-bit logs exposed exclusions that a sticky before/after flag alone could not attribute to a run. Use live bits and newly set sticky bits; retain exclusions. MEASURED baseline exclusions and E3b flags show why PSU metadata belongs beside every result. |
 | HSI clock error | MEASURED smoke1 echo fit: 31 echoes, drift 18839.975 ppm, residual RMS 1083.883 µs. CALCULATED slope 1.01884, about 1.88% fast. Switching to HSE gives smoke6 final fit drift 89.040 ppm and RMS 39.581 µs. Echo-derived rate is not direct UART bit timing or independent clock calibration. |
 | RX overrun regression | A/B retained logs: MEASURED final UART/CRC counters were smoke2 138/10; HSI smoke3 125/0; battery smoke4 99/4; old firmware smoke5 2/0. Changing clock or Pi supply did not remove the newer-firmware errors; reverting firmware largely did. INFERRED regression localization, rather than proof of one instruction's cause. Inspection found transition work inside interrupt-masked supervisor calls; the fix removes those broad masks and defaults to DMA. |
@@ -429,7 +429,7 @@ reference events. Sources: `results/2026-10-12_f4_extra/{20261012T102112Z_f4,202
 | F4 clock-sync starvation | A higher-priority FIFO hog starved the bridge. MEASURED excluded RMS maxima: 226.585 / 445.817 / 346.040 µs, exceeding the ASSUMED 200 µs gate; one also has live power flags. MCU events remain recorded, but all invalid runs are excluded from both timing summaries. The fault also disrupts its mapped-time observer. |
 | Corrected transition interpretation; tick-rate issue closed | The earlier roughly 98 ms value measures heartbeat age at source-age HOLD (reason 9), not heartbeat timeout. Recompute each local interval using its event reason. F1/F2 HOLD is about 175 ms after INFERENCE; heartbeat FAILSAFE reason 3 is 100.128–100.641 ms after HEARTBEAT. Original accepted F4 is direct FAILSAFE reason 3; one extra accepted run first enters HOLD (see Round 14). MEASURED F5 r5 SysTick/TIM2 self-check: -8 ppm over a 1000 ms window (`tick_rate_ppm`, `tick_window_ms`). There is no tick-rate bug behind this value. Independent absolute clock/GPIO calibration remains pending. |
 
-Sources: this ticket's cyclictest incident description; `tools/timing/cyclictest_campaign.sh`, `results/2026-10-11_cyclictest/SUMMARY.md`, and `results/2026-10-11_cyclictest/20261008T091937Z_cyc_P0/B0_idle_r1/sched_check.txt`; `results/2026-10-11_inference_baseline/SUMMARY.md`; `results/2026-10-12_hw_bringup/hw_smoke{1,2,3_hsi,4_batt,5_oldfw,6_dma}/mcu_status.csv`, `echo.csv`, `config.json`, and `summary.json`; `stm32/firmware/README.md`; E3/E3b sources above; `results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–13. UART/CRC pairs are cumulative counters at the final retained status, not normalized equal-duration error rates.
+Sources: the cyclictest incident description; `tools/timing/cyclictest_campaign.sh`, `results/2026-10-11_cyclictest/SUMMARY.md`, and `results/2026-10-11_cyclictest/20261008T091937Z_cyc_P0/B0_idle_r1/sched_check.txt`; `results/2026-10-11_inference_baseline/SUMMARY.md`; `results/2026-10-12_hw_bringup/hw_smoke{1,2,3_hsi,4_batt,5_oldfw,6_dma}/mcu_status.csv`, `echo.csv`, `config.json`, and `summary.json`; `stm32/firmware/README.md`; E3/E3b sources above; `results/2026-10-12_e4_faults/20261012T093526Z_e4/e4_runs.csv`; main-checkout `slides_course/REVIEW_LOG.md`, rounds 11–13. UART/CRC pairs are cumulative counters at the final retained status, not normalized equal-duration error rates.
 
 The RX fix also exposed a build reproducibility hazard: rapid configuration
 switches could reuse objects with coarse make timestamps. Configuration changes

@@ -1,4 +1,4 @@
-"""Build hardware summary tables for the CN-T2/3/5/6/7/9 runs."""
+"""Build hardware summary tables for the CN-T2/3/5/6/7/8/9 runs."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from metrics import compute_run_metrics, subtract_timestamps
+import t8
 
 
 SCENARIOS = ("T2", "T3", "T4", "T5", "T6", "T7", "T9")
@@ -86,7 +87,10 @@ def _sequence_loss(sender: pd.DataFrame, receiver: pd.DataFrame) -> float:
 
 def _throttle(run: Path, when: str) -> str:
     path = run / f"throttled_{when}.txt"
-    return " ".join(path.read_text().split()) if path.exists() else ""
+    if path.exists():
+        return " ".join(path.read_text().split())
+    # run_scenario.py stores the vcgencmd output inside meta.json instead.
+    return " ".join(str(_meta(run).get(f"throttle_{when}", "")).split())
 
 
 def _run_metrics(run: Path, scenario: str, config: str) -> dict:
@@ -253,7 +257,7 @@ def _table(lines: list[str], headers: list[str], rows: list[list[str]]) -> None:
 
 def build_report(results_root: Path, output_path: Path) -> None:
     all_rows, smoke = _collect(results_root)
-    lines = ["# Hardware results tables (CN-T2/T3/T4/T5/T6/T7/T9)", "",
+    lines = ["# Hardware results tables (CN-T2/T3/T4/T5/T6/T7/T8/T9)", "",
              "Packet loss is reported both from the sender's latest RR (`cum_lost / expected`) and from unique received RTP sequence numbers divided by sender packet count. Frame loss and on-time ratio use frames as denominator. Latency and queue/inference intervals are calculated only within their named clock. Empty cells mean unavailable or inapplicable.", ""]
     headers = ["Config", "Runs", "Configured netem", "RR loss", "Sequence loss", "Packets/frame", "Frame loss", "CALCULATED 1−(1−p)^n̄", "On-time", "Late", "Jitter (ms)", "Capture→AI P50 (ms)", "Capture→AI P95 (ms)", "AI results/s", "Throttled before", "Throttled after"]
     lines.extend(["## CN-T2 and CN-T3", ""])
@@ -299,18 +303,22 @@ def build_report(results_root: Path, output_path: Path) -> None:
     for agg in _aggregate(all_rows["T9"], keys):
         t9_rows.append([agg["config"], str(agg["runs"]), f"{_fmt(agg['pi_capture_send_p50'],2)} / {_fmt(agg['pi_capture_send_p95'],2)}", f"{_fmt(agg['pi_send_result_p50'],2)} / {_fmt(agg['pi_send_result_p95'],2)}", f"{_fmt(agg['pi_total_p50'],2)} / {_fmt(agg['pi_total_p95'],2)}", _fmt(agg["pi_sum_max_error_ms"], 3), f"{_fmt(agg['edge_playout_wait_p50'],2)} / {_fmt(agg['edge_playout_wait_p95'],2)}", f"{_fmt(agg['edge_queue_wait_p50'],2)} / {_fmt(agg['edge_queue_wait_p95'],2)}", f"{_fmt(agg['edge_inference_p50'],2)} / {_fmt(agg['edge_inference_p95'],2)}"])
     _table(lines, t9_headers, t9_rows or [["_No runs yet_"] + [""] * (len(t9_headers) - 1)])
+    lines.append("")
+    lines.extend(t8.report_lines(results_root / "T8"))
     smoke_items = [f"CN-{s}: {', '.join(names)}" for s, names in smoke.items() if names]
     lines.extend(["", "Footnote: smoke configurations excluded from all tables: " + ("; ".join(smoke_items) if smoke_items else "none found") + "."])
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main(argv=None) -> None:
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
-        raise SystemExit("usage: hw_tables.py RESULTS_ROOT")
+    import argparse
     project = Path(__file__).resolve().parents[2]
-    build_report(Path(args[0]), project / "rtp" / "report" / "hw_tables.md")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("results_root", type=Path)
+    parser.add_argument("--output", type=Path, default=project / "rtp" / "report" / "hw_tables.md")
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    build_report(args.results_root, args.output)
 
 
 if __name__ == "__main__":

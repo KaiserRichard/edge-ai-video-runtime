@@ -89,7 +89,7 @@ and `--cpu N`. Priority 0/default keeps normal scheduling. Requested real-time
 scheduling or affinity failures terminate with a permission/allowed-CPU message;
 they never silently fall back. These options require Linux; on macOS they fail
 explicitly. Use suitable RLIMIT_RTPRIO/CAP_SYS_NICE permissions when testing them
-on the Pi. This ticket does not implement cgroups/mlockall or the full P1 profile.
+on the Pi. This implementation does not include cgroups/mlockall or the full P1 profile.
 `--count N` limits generated inputs (source), completed results (stub), or decoded
 inferences (rx); 0/default runs until SIGINT/SIGTERM. Bridge runs until signaled.
 
@@ -205,7 +205,11 @@ input/result bytes; they require only Python standard library and a C compiler.
 KNOWN: host checks are software verification, with a macOS clock fallback.
 UNKNOWN: Ubuntu aarch64 execution, Linux real-time permission/affinity behavior,
 the Pi runner, physical UART throughput and STM32 timing until run on those
-targets. No Pi benchmark numbers are supplied by this implementation ticket.
+targets. No Pi benchmark numbers are supplied by this implementation.
+
+Optional, off by default: an IMU sensor producer and status display live in
+`imu/` and are not built or started by anything above; see
+[docs/IMU_EXTENSION.md](../docs/IMU_EXTENSION.md).
 
 Real UART and E4 commands: see [scripts/pi/UART.md](../scripts/pi/UART.md). Physical UART, GPIO pairing and faults are UNVERIFIED ON HARDWARE. Bridge options `--echo-ms`, `--status-csv`, `--echo-csv`, `--state-events-csv` control periodic sync and receive logs.
 

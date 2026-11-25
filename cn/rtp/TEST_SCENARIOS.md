@@ -1,7 +1,7 @@
 # CN test scenarios (RTP/RTCP video for edge AI)
 
 English working draft (owner review). The Vietnamese table for the submitted report is produced
-by ticket RPT2 from this file. Refines the seed list CN-T1..T10 from the 2026-10-29 handoff.
+from this file. Refines the seed list CN-T1..T10 from the 2026-10-29 handoff.
 
 Rules for every scenario:
 - Topology from [ROADMAP.md](ROADMAP.md): Pi A sender with camera, edge receiver, netem on Pi A

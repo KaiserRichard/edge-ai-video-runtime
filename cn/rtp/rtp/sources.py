@@ -1,6 +1,6 @@
 """JPEG sources. Capture times are local monotonic ns, never sensor-clock values.
 
-CAM1 ABI source: OS repo linux/camera/{README.md,ring.h,ring.cpp}, ticket
+CAM1 ABI source: OS repo linux/camera/{README.md,ring.h,ring.cpp}; design note
 CAM1_CAMERA_SOURCE.md. No OS files are copied or modified. shm: uses the CAM1
 native reader (HEA_CAM_READER_LIB or --shm-library) for acquire loads/fences;
 Python mmap is used only to discover candidate IDs, never to trust pixel copies.

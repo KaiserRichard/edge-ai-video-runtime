@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-# The ticket scope creates only rtcp.py, so expose its directory for this test run.
+# Expose the rtcp.py module directory for this standalone test run.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtp"))
 
 from rtcp import (

@@ -1,0 +1,28 @@
+# CN-T8 on hardware: Pi 5 sender (camera) -> laptop receiver over Ethernet.
+# Two arms, run one after the other with the same steps:
+#   python runner/run_scenario.py configs/CN-T8-hw.yaml        (ABR)
+#   python runner/run_scenario.py configs/CN-T8-hw-fixed.yaml  (fixed baseline, this file)
+# Run from the laptop (controller = receiver host). --output-dir must be a path
+# that exists on BOTH hosts (e.g. /tmp/cn_t8); logs are copied back with scp.
+# EDIT BEFORE USE: PI_SSH (ssh alias of the Pi), LAPTOP_IP (laptop Ethernet IP),
+# interface (Pi Ethernet interface, see `ip -br link`), and the camera source.
+# Camera: hea_cam must be running on the Pi with --shm hea_cam (the name the OS runners use,
+# os/tools/experiments/e_campaign.py camera_command; manual example os/linux/camera/README.md:28);
+# add --shm-library PATH if the sender cannot find the camera library; or use --source mjpeg-pipe.
+scenario: T8
+config: fixed_high_hw
+interface: eth0
+capture_interface: any
+privilege: "sudo -n"          # tc/tcpdump need root; needs passwordless sudo for tc/tcpdump
+receiver_ai: "off"
+repetitions: 5
+links: {sender: PI_SSH, receiver: local}
+commands:
+  sender: "python -m rtp.sender --host LAPTOP_IP --duration {duration_s} --abr fixed --quality 90 --fps 15 --source shm:hea_cam"
+  receiver: "python -m rtp.receiver --bind 0.0.0.0 --rr-interval 1"
+  ai: "python -m rtp.ai --bind 0.0.0.0"
+steps:
+  - {label: "0pct_a", netem: "loss 0%", duration_s: 20}
+  - {label: "5pct", netem: "loss 5%", duration_s: 20}
+  - {label: "15pct", netem: "loss 15%", duration_s: 20}
+  - {label: "0pct_b", netem: "loss 0%", duration_s: 20}

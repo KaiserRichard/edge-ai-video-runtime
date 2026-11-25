@@ -16,4 +16,4 @@ Use C++ scenarios with stock ns-3 modules; do not change dependency internals.
 The old Python binding pilot was not the supported simulation path.
 
 This page converts the useful scope/roadmap and agent-rule content into stable
-documentation. Raw worker tickets, schedules and worklogs are not bundled.
+documentation. Raw task records, schedules and worklogs are not bundled.

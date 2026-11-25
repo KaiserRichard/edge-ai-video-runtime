@@ -11,4 +11,4 @@ denominators/endpoints. Read the table's validity and thermal notes.
 The local staging task did not rerun hardware or ns-3.
 
 Original draft input commit and hash are in docs/provenance/files.csv at the
-repository root. Its raw authoring/ticket narrative is not a release claim.
+repository root. Its raw authoring narrative is not a release claim.

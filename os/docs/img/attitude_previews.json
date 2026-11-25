@@ -1,0 +1,92 @@
+[
+  {
+    "name": "level",
+    "rpy_deg": [
+      0,
+      0,
+      0
+    ],
+    "on_pixels": 570,
+    "bbox_xyxy": [
+      0,
+      3,
+      112,
+      62
+    ]
+  },
+  {
+    "name": "roll30",
+    "rpy_deg": [
+      30,
+      0,
+      0
+    ],
+    "on_pixels": 565,
+    "bbox_xyxy": [
+      0,
+      1,
+      112,
+      62
+    ]
+  },
+  {
+    "name": "pitch45",
+    "rpy_deg": [
+      0,
+      45,
+      0
+    ],
+    "on_pixels": 559,
+    "bbox_xyxy": [
+      0,
+      13,
+      112,
+      62
+    ]
+  },
+  {
+    "name": "yaw90",
+    "rpy_deg": [
+      0,
+      0,
+      90
+    ],
+    "on_pixels": 567,
+    "bbox_xyxy": [
+      0,
+      3,
+      112,
+      62
+    ]
+  },
+  {
+    "name": "mixed",
+    "rpy_deg": [
+      30,
+      -25,
+      60
+    ],
+    "on_pixels": 543,
+    "bbox_xyxy": [
+      0,
+      4,
+      112,
+      62
+    ]
+  },
+  {
+    "name": "inverted",
+    "rpy_deg": [
+      180,
+      0,
+      0
+    ],
+    "on_pixels": 559,
+    "bbox_xyxy": [
+      0,
+      11,
+      112,
+      62
+    ]
+  }
+]

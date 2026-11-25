@@ -209,5 +209,5 @@ without importing ONNX Runtime.
 UNKNOWN until target verification: real-model execution, full offline wheel
 resolution/download, Pi latency distributions, thermal behavior under stress,
 and real-model interoperability with the C pipeline on the Pi. Fake-model tests establish only
-software behavior, not real inference performance. This ticket does not complete
+software behavior, not real inference performance. This implementation does not complete
 the source/bridge/logger or item 2.5 experiments and supplies no measurement data.

@@ -11,6 +11,7 @@ test:
 	$(PYTHON) -m unittest discover -s tools/la/tests -v
 	$(MAKE) -C linux/camera test
 	$(PYTHON) -m unittest discover -s linux/inference/tests -v
+	$(MAKE) -C linux/imu test PYTHON=$(PYTHON)
 
 firmware:
 	$(MAKE) -C stm32 firmware
@@ -19,5 +20,6 @@ clean:
 	$(MAKE) -C protocol clean
 	$(MAKE) -C stm32 clean
 	$(MAKE) -C linux clean
+	$(MAKE) -C linux/imu clean
 	$(MAKE) -C stm32/firmware clean
 	find analysis linux/inference linux/tests tools/la tools/experiments -type d -name __pycache__ -prune -exec rm -rf {} +

@@ -175,7 +175,7 @@ PA5 state indication with a 1 Hz blink and holds PB5 low; never use that diagnos
 image for failsafe timing experiments.
 
 Flash/run commands below are **for the Pi**, from the repository root, with the
-Nucleo connected by USB. They were not executed for this ticket. Choose one flasher:
+Nucleo connected by USB. They were not executed during this validation. Choose one flasher:
 
 ```sh
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
@@ -258,7 +258,7 @@ latency and GPIO correspondence remain **UNVERIFIED ON HARDWARE**.
 
 ## RX regression investigation (2026-10-12)
 
-**UNVERIFIED ON HARDWARE.** The ticket's 40 s A/B measurements are user-supplied;
+**UNVERIFIED ON HARDWARE.** The 40 s A/B measurements are user-supplied;
 no new rig measurements or numeric DWT maxima are available from this host.
 
 Static inspection of `git diff 68aa5be..fec09e1 -- stm32/` found transition-ring
@@ -297,7 +297,7 @@ Build validation also exposed a reproducibility bug: macOS GNU make 3.81 can reu
 some objects when configuration stamps change within the same second, producing a
 mixed HSI/HSE or IRQ/DMA image. Changed configurations now force every object,
 ELF and binary to rebuild irrespective of timestamp resolution. This does not
-establish that the ticket's measured images were affected.
+establish that the measured images were affected.
 
 Reproduce the checks from the worktree root:
 
@@ -379,12 +379,12 @@ See `protocol/PROTOCOL.md` for sign, unavailable sentinel, and quantization.
 A shared oscillator error cannot be detected by this relative-rate check alone.
 
 New behavior is **UNVERIFIED ON HARDWARE**. No flash, reset, serial-device or GPIO
-operation was performed for this ticket. Host tests include the measured F2 event
+operation was performed during this validation. Host tests include the measured F2 event
 ordering as a synthetic regression, exact heartbeat expiry, F5's source-age HOLD
 with live heartbeats, and ratio startup/cadence/sign/counter-wrap checks.
 
 
-Local validation for this ticket: all four HSE/HSI × DMA/IRQ firmware profiles
+Local validation: all four HSE/HSI × DMA/IRQ firmware profiles
 cross-compiled with `-Wall -Wextra -Werror` and zero warnings; final artifacts use
 HSE/DMA, 921600 baud, VCP/blink disabled. Default image is 12,008 B flash,
 11,348 B static RAM plus 2,048 B reserved MSP. Protocol/clock tests passed

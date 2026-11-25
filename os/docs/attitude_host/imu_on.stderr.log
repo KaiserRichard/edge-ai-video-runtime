@@ -1,0 +1,6 @@
+hea_imu: probe
+two-die map (accelerometer + gyroscope):
+  accelerometer 0x18: reg 0x00 = 0x1E (expected 0x1E) ok
+  gyroscope 0x68: reg 0x00 = 0x0F (expected 0x0F) ok
+hea_imu: IMU sensor map, accel 0x18 (id 0x1E), gyro 0x68 (id 0x0F), 5461.33 LSB/g, 65.536 LSB/dps
+hea_imu: keep IMU sensor STILL for 0.10 s (gyro bias calibration)
