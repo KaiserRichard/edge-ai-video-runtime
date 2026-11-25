@@ -13,7 +13,6 @@ run on the Pi. Read [hardware setup](../../docs/ENVIRONMENT_AND_HARDWARE.md) and
 | `uart_tools.py` | Serial/GPIO helper used by the pipeline |
 | `fault_inject.sh` | Explicit process kill/stop injections; see [UART.md](UART.md) |
 | `run_experiment.sh` | Older generic tmux wrapper writing `experiments/runs/`; uses before/after sticky power gating. Prefer campaign runners for current validity rules |
-| `conductor.service` | Optional service template; deployment details in [historical conductor state](../../docs/CONDUCTOR_STATE.md) |
 
 Build and inspect on the Pi:
 

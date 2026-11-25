@@ -13,9 +13,9 @@ The Makefile builds fake capture everywhere and includes the libcamera backend o
 when `pkg-config --exists libcamera` succeeds. No camera software is vendored.
 Run `make -C linux/camera clean all` after changing the installed libcamera or build
 flags so an earlier fake-only binary is rebuilt. The backend targets the C++17
-libcamera API; compilation against the conductor's Pi installation remains pending.
+libcamera API; compilation against the Pi installation remains pending.
 
-## Running (conductor on the Pi later)
+## Running on the Pi (pending)
 
 Start the result receiver first, then inference (the ring is opened lazily after
 the first notification), then the camera. Example, with a receiver already bound
@@ -151,4 +151,4 @@ Host tests exercise ASan/UBSan native concurrent reads, a deterministic sequence
 between copy and verification, slot reuse, fake CSV/drop accounting, exact timestamp datagrams,
 and the native reader with real numpy preprocessing and a fake model over Unix
 socketpairs. Physical camera capture, DMA coherency, sensor colors, negotiated FPS,
-Pi scheduling, and libcamera compilation remain conductor checks on the Pi.
+Pi scheduling, and libcamera compilation remain operator checks on the Pi.

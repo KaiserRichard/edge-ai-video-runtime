@@ -183,7 +183,7 @@ Status: ✓ done, ◐ partly, ○ not started. Hardware column says what must be
 | 14 | Analysis scripts and plots | ○ | None |
 | 15 | Report and slides | ◐ outline done | None |
 
-Order: 4 → 3 → 7, 8, 11 in parallel (Codex) → 6, 9, 10 on the Pi → 12 → 13 → 14 → 15.
+Order: 4 → 3 → 7, 8, 11 in parallel → 6, 9, 10 on the Pi → 12 → 13 → 14 → 15.
 
 The same work as an ordered plan with a "done when" check per step:
 

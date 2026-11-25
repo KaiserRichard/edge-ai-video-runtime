@@ -121,7 +121,7 @@ echo over UART is the fallback (half-RTT bound, no extra wire).
      HostName HOST
      User os
    ```
-   After that, `ssh HOST true` must succeed with no password. This is the check the conductor needs.
+   After that, `ssh HOST true` must succeed with no password. This is the check the operator needs.
 4. On the Pi: clone the repo, `sudo ./scripts/pi/bootstrap.sh`, reboot.
 5. If the Mac and the Pi will not be on the same network, install Tailscale on both and use the
    Tailscale name as `HostName`.
@@ -143,28 +143,18 @@ Self-recovery so nobody has to walk over and power-cycle:
 - STM32 reset and reflash from the Pi through the ST-LINK (`openocd ... -c "reset run"`).
 - Fault injection stays at process level (kill, SIGSTOP, FIFO CPU hog). No deliberate kernel
   freezes on the parked rig.
-- Agents (Claude/Codex) are paused while a measurement runs, so they do not add load to the
-  system under test.
 
 NVMe boot on Pi 5 needs an M.2 HAT and a recent bootloader EEPROM. If NVMe boot is not
 working within an hour, use a microSD; the project does not depend on disk speed.
 
-## 9. Agent host on the Pi (decided 2026-10-05)
+## 9. Remote access on the Pi (decided 2026-10-05)
 
-Claude Code (conductor) and the Codex workers run on the Pi, so the Mac can sleep.
 Run after `bootstrap.sh`, as user `os`:
 
-1. Claude Code: `curl -fsSL https://claude.ai/install.sh | bash`, then `claude` once to log in.
-2. Codex: `sudo apt-get install -y nodejs npm && sudo npm install -g @openai/codex`.
-   Copy the logins from the Mac: `scp -r ~/.codex-* HOST:` (each folder keeps one account).
-3. GitHub push from the Pi: `ssh-keygen -t ed25519 -f ~/.ssh/os_deploy`, add the `.pub` as a
+1. GitHub push from the Pi: `ssh-keygen -t ed25519 -f ~/.ssh/os_deploy`, add the `.pub` as a
    deploy key with write access on this repository only, and point the remote at it.
-4. Start the conductor at boot, inside tmux, with the user unit `scripts/pi/conductor.service`
-   (install steps are in the file's header; `loginctl enable-linger os` makes it start with no login).
-5. Tailscale for remote SSH from anywhere: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`,
+2. Tailscale for remote SSH from anywhere: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`,
    same account on the Mac, then `ssh os@HOST` works from any network.
 
-After a power cut the Pi boots by itself when power returns, and SSH, Tailscale and the
-conductor all start without anyone logging in.
-
-The conductor pauses all agents before a measurement run starts and resumes them after.
+After a power cut the Pi boots by itself when power returns, and SSH and Tailscale
+start without anyone logging in.

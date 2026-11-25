@@ -15,5 +15,4 @@ its Linux dependency build and integration tests were not reproduced here.
 Use C++ scenarios with stock ns-3 modules; do not change dependency internals.
 The old Python binding pilot was not the supported simulation path.
 
-This page converts the useful scope/roadmap and agent-rule content into stable
-documentation. Raw task records, schedules and worklogs are not bundled.
+This page summarizes the coursework scope and roadmap.
