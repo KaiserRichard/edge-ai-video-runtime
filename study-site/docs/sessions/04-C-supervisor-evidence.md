@@ -174,7 +174,7 @@ flowchart TB
 | Alive không bằng fresh | F5 HB age tại HOLD 17.459–18.510 ms nhưng source hết hạn (CALCULATED từ MEASURED) |
 | Chốt và re-arm | Tám timeline Stateflow kiểm logic (SIMULATED), không claim vật lý |
 
-Liên hệ CN: playout buffer cố tình chờ để tăng tính liên tục; latest-value bỏ dữ liệu cũ để tăng freshness. Cả hai cần chọn theo yêu cầu ứng dụng, không có chính sách tốt tuyệt đối. WBR là ví dụ động lực: dữ liệu điều khiển cũ có thể vô ích dù đúng giá trị tại lúc đo; kết quả OS này không phải kiểm chứng an toàn WBR.
+Kết quả OS này là bằng chứng cho một mô hình giám sát độ mới trên bàn thử, không phải chứng nhận an toàn cho một hệ thống điều khiển thật.
 
 ## C9. Trắc nghiệm
 
@@ -244,7 +244,7 @@ Reason xác định reference đúng. Chỉ so sánh các thời điểm trên c
 ??? question "Tại sao HOLD khoảng 175 ms chứ không phải 200 ms?"
     Ngưỡng tính theo source age, không phải chỉ elapsed từ receipt. Kết quả đã có khoảng 25 ms tuổi gồm allowance tại receipt trong các mẫu lịch sử; cần thêm khoảng 175 ms để tới 200 ms. Không đổi ngưỡng hay đổ cho tick bug.
 
-??? question "Có thể tuyên bố robot an toàn hoặc GPIO phản ứng trong 101 ms không?"
+??? question "Có thể tuyên bố hệ thống an toàn hoặc GPIO phản ứng trong 101 ms không?"
     Không. Số quan sát là state timing của MCU trong các fault đã kiểm thử, không phải worst-case bound hay actuator reaction. Analyzer còn unverified, chưa có capture độc lập xác nhận GPIO và không có actuator thật trong prototype.
 
 **Nguồn:** [`STAGE_REPORT.md`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/os/docs/STAGE_REPORT.md), Physical faults và Extra F4 attempts; [`os/tools/experiments/e4_campaign.py`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/os/tools/experiments/e4_campaign.py), [`os/linux/src/hea_bridge.c`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/os/linux/src/hea_bridge.c), [`os/stm32/src/supervisor.c`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/os/stm32/src/supervisor.c), [`os/protocol/PROTOCOL.md`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/os/protocol/PROTOCOL.md); `oscn_figures.zip` plots, Stateflow và logic_analyzer. Không rerun fault, không flash MCU, không suy diễn raw log ngoài các bảng đã cung cấp.

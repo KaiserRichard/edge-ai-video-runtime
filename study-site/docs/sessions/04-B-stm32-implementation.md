@@ -234,7 +234,7 @@ MEASURED F5 r4: HOLD sau 175.596 ms tính từ inference cuối, HB age 18.336 m
 
 ### B6.2. Expiry trước arrival: vì sao thứ tự quan trọng?
 
-`supervisor_update` đánh giá trạng thái theo now trước khi nhận event mới, sau đó accept, cập nhật source age và đánh giá lại. Nếu heartbeat mới đến đúng lúc deadline hết hạn thì trạng thái FRESH cũ đã đủ điều kiện FAILSAFE; frame mới không xóa latch. Nếu accept trước expiry, frame mới có thể che việc vừa vi phạm timeout. Tương tự ý nghĩa thứ tự event tie trong CN SimEvents, nhưng ở đây là chính sách giám sát có chủ đích.
+`supervisor_update` đánh giá trạng thái theo now trước khi nhận event mới, sau đó accept, cập nhật source age và đánh giá lại. Nếu heartbeat mới đến đúng lúc deadline hết hạn thì trạng thái FRESH cũ đã đủ điều kiện FAILSAFE; frame mới không xóa latch. Nếu accept trước expiry, frame mới có thể che việc vừa vi phạm timeout. Đây là chính sách giám sát có chủ đích: kiểm tra hạn trước, nhận dữ liệu sau.
 
 ## B7. Latching, re-arm và reset
 

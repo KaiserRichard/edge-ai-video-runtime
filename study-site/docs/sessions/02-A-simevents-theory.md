@@ -22,7 +22,7 @@ Mô phỏng: generator tạo entity chứa kích thước và thời điểm sin
 | UDP socket thực | Dây entity |
 | Ethernet hoặc Wi-Fi | Channel có luật delay/loss |
 | ONNX hoặc workload giả lập | Service time cấu hình |
-| Tải OS biến thiên | Tham số và random seed |
+| Tải máy tính biến thiên | Tham số và random seed |
 
 ![Native SimEvents v2: mô hình toàn hệ thống](../assets/fig/simevents/CN_simevents_v2.png)
 

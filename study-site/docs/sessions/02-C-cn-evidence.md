@@ -125,7 +125,7 @@ Mô phỏng tái tạo xu hướng, không chứng minh mọi con số trùng nh
 | 100 ms | 0% | 0% | 117.68 | 118.82 | 122.14 |
 | 200 ms | 0% | 0% | 216.61 | 218.82 | 221.17 |
 
-Từ 20 tới 100 ms, loại hết late quan sát được nhưng thêm khoảng 80 ms median latency. Tăng tiếp 200 ms không đem thêm continuity trong profile này. Jitter đo ở receiver vẫn khoảng 15–17 ms; buffer không xóa jitter mạng. Profile ít biến thiên `d20j5` có 100% on-time ở cả bốn depth; P50 52.47/82.76/131.60/232.11 ms. Do đó chọn depth theo profile và latency budget, không phải luôn lấy lớn nhất. Với robot cần feedback nhanh, dữ liệu liên tục nhưng quá cũ vẫn bất lợi.
+Từ 20 tới 100 ms, loại hết late quan sát được nhưng thêm khoảng 80 ms median latency. Tăng tiếp 200 ms không đem thêm continuity trong profile này. Jitter đo ở receiver vẫn khoảng 15–17 ms; buffer không xóa jitter mạng. Profile ít biến thiên `d20j5` có 100% on-time ở cả bốn depth; P50 52.47/82.76/131.60/232.11 ms. Do đó chọn depth theo profile và latency budget, không phải luôn lấy lớn nhất. Với ứng dụng cần phản hồi nhanh, dữ liệu liên tục nhưng quá cũ vẫn bất lợi.
 
 ## C5. CN-T5 — packet size và MTU
 
@@ -240,7 +240,7 @@ Kết quả khác do thứ tự event của scheduler. v1 đặt priority arriva
 
 ### C8.2. Thử nhiễu động có kiểm soát
 
-SOURCE: [`cnse2_tie_check.m`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/cnse2_tie_check.m) thay service time 50 ms ±1 ns để bỏ trùng chính xác. Kết quả 32/32 metric rows identical, max abs diff 0 theo báo cáo. Đây là cách cô lập nguyên nhân, không thay hàng loạt tham số. Liên hệ OS: thứ tự xử lý hai sự kiện đồng thời có thể thay dữ liệu consumer lấy.
+SOURCE: [`cnse2_tie_check.m`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/cnse2_tie_check.m) thay service time 50 ms ±1 ns để bỏ trùng chính xác. Kết quả 32/32 metric rows identical, max abs diff 0 theo báo cáo. Đây là cách cô lập nguyên nhân, không thay hàng loạt tham số. Ý nghĩa trong mô phỏng mạng: khi hai sự kiện có cùng thời điểm, event calendar của SimEvents phải chọn một thứ tự; thứ tự đó quyết định ảnh nào khối Inference lấy ra tiếp theo. Lệch đi 1 ns làm hai sự kiện không còn trùng, nên kết quả không còn phụ thuộc vào cách phá thế hòa.
 
 ## C. Trắc nghiệm cuối phần
 

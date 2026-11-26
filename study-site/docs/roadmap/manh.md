@@ -20,6 +20,8 @@ Phần bạn trình bày là receiver, jitter, playout, ghép ảnh và tạo RT
 
 ## Bước 3 — Luyện trình bày
 
+Trang luyện: [Trình bày CN](../defence/cn.md) · [Demo CN](../demo/cn.md)
+
 - Receiver nhận các mảnh, sequence nhận diện packet, timestamp đặt lịch media; marker không bảo đảm đủ mảnh.
 - Jitter RFC 3550 là bộ lọc 1/16 (SOURCE); deadline dựa vào anchor + hiệu timestamp/90000 + depth.
 - T4 depth 20→50→100 ms: late 93.5→14.3→0%, P50 37.91→75.32→117.68 ms (MEASURED).

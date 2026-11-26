@@ -234,7 +234,7 @@ Nguồn Pi lịch sử 5 V/3 A; rail dưới tải báo 4.66–4.92 V (MEASURED)
     Stage report: v1 sử dụng kiểm tra đang áp dụng lúc đo. V2 yêu cầu log power có timestamp RAW phủ cửa sổ, gap tối đa 1.5 s theo mô tả report, liveness stressor, clock fit không cũ quá 5 s. Replay v2 không xác nhận được E1–E3 (0/45) và cyclictest chỉ 3/15 mỗi profile (idle), do thiếu bằng chứng bổ sung, không phải chứng minh số đo sai. E4 gốc vẫn 17/25. `ANALYSIS_READINESS.md` còn ghi bộ kiểm tra E3 real cụ thể chặt hơn (gap 0.75 s, echo gần nhất 2 s, RMS 200 µs); không áp các ngưỡng khác nhau như một rule chung. Các module analysis OS không có đầy đủ trong source ZIP để kiểm lại thực thi. Empty event có thể hợp lệ nếu đã chứng minh steady FRESH, nhưng các run FLAGGED ở đây báo FAILSAFE; không hồi tố sửa verdict.
 
 !!! warning "Điều có thể và chưa thể tuyên bố"
-    Có bằng chứng lịch sử về contention, chính sách freshness PTY và state transitions trên MCU. Không có clean comparison E3 real; không chứng minh worst-case latency, an toàn robot, độ tin cậy dài hạn hoặc độ trễ GPIO vật lý. Nguồn raw đầy đủ không có trong ZIP; các bảng E dùng stage report, OS-T4 dùng demo review và hình gốc.
+    Có bằng chứng lịch sử về contention, chính sách freshness PTY và state transitions trên MCU. Không có clean comparison E3 real; không chứng minh worst-case latency, an toàn của hệ thống điều khiển, độ tin cậy dài hạn hoặc độ trễ GPIO vật lý. Nguồn raw đầy đủ không có trong ZIP; các bảng E dùng stage report, OS-T4 dùng demo review và hình gốc.
 
 ## C10. Trắc nghiệm
 

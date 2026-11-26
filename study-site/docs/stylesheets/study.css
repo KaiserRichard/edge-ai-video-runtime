@@ -73,3 +73,14 @@
 .md-typeset a.who-btn small { font-size:.66rem; font-weight:500; color:var(--md-default-fg-color--light); }
 .md-typeset a.who-btn:hover, .md-typeset a.who-btn:focus-visible { border-color:var(--md-accent-fg-color); transform:translateY(-2px); }
 .md-typeset a.who-lead { border-style:dashed; }
+
+/* persona bar and figure zoom (26 Nov) */
+.persona-bar { font-size: .75rem; padding: .4rem .7rem; margin: 0 0 1rem; border-radius: 6px;
+  background: var(--md-code-bg-color); color: var(--md-default-fg-color--light); }
+.persona-bar a { font-weight: 600; }
+img.zoomable { cursor: zoom-in; }
+.zoom-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.88); overflow: auto;
+  display: flex; flex-direction: column; align-items: center; padding: 1rem; cursor: zoom-out; }
+.zoom-overlay img { max-width: none; width: auto; height: auto; margin: auto; background: #fff; }
+@media (max-width: 1200px) { .zoom-overlay img { max-width: 200%; } }
+.zoom-overlay p { color: #ddd; font-size: .7rem; margin: .5rem 0 0; }

@@ -16,4 +16,3 @@ Chọn tên của bạn để xem lộ trình học riêng.
 [Khánh<small>xem cả nhóm</small>](roadmap/khanh.md){ .who-btn .who-lead }
 </div>
 
-![Lộ trình học của nhóm](assets/img/core_learning_path.webp){ .cover loading=lazy }

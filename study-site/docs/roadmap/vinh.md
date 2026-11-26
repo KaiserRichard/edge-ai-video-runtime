@@ -23,6 +23,8 @@ Phần bạn trình bày là STM32 FreeRTOS supervisor của OS và hàng đợi
 
 ## Bước 3 — Luyện trình bày
 
+Trang luyện: [Trình bày CN](../defence/cn.md) · [Demo CN](../demo/cn.md) · [Trình bày OS](../defence/os.md) · [Demo OS](../demo/os.md)
+
 - OS: 3 task, tick 1 kHz và timer µs; nhận UART bằng DMA, kiểm tra CRC và accept trước khi đánh giá (SOURCE).
 - OS: HB timeout 100 ms, source age HOLD 200 ms, FAILSAFE 500 ms (SOURCE). F2 local FAILSAFE P50 100.577 ms từ HB cuối; F5 HOLD/FAILSAFE P50 175.596/475.596 ms từ INF cuối (MEASURED).
 - OS: phân biệt re-arm logic và reset; capture logic analyser chưa xác minh vật lý.

@@ -20,6 +20,7 @@ theme:
   features:
   - navigation.sections
   - navigation.top
+  - navigation.footer
   - content.code.copy
   - search.highlight
 plugins:
@@ -56,25 +57,26 @@ nav:
       - "Mạnh": roadmap/manh.md
       - "Trường": roadmap/truong.md
       - "Khánh — cả nhóm": roadmap/khanh.md
-  - "Bài học":
-      - "CN Session 1 — Sản phẩm":
-          - "A. Sản phẩm và đường đi dữ liệu": sessions/01-A-cn-product.md
-          - "B. RTP và receiver": sessions/01-B-cn-mechanisms.md
+  - "Mạng máy tính (CN)":
+      - "Session 1 — Sản phẩm thật":
+          - "A. Sản phẩm, camera, JPEG": sessions/01-A-cn-product.md
+          - "B. RTP, RTCP, receiver, inference": sessions/01-B-cn-mechanisms.md
           - "C. Thực hành và đọc log": sessions/01-C-cn-demo.md
-      - "CN Session 2 — SimEvents":
+      - "Session 2 — Mô phỏng và bằng chứng":
           - "A. Nền tảng SimEvents": sessions/02-A-simevents-theory.md
-          - "B. Mô hình v2": sessions/02-B-simevents-model.md
-          - "C. Kết quả và bằng chứng": sessions/02-C-cn-evidence.md
+          - "B. Mô hình v2, B1–B11": sessions/02-B-simevents-model.md
+          - "C. Kết quả, C1–C8": sessions/02-C-cn-evidence.md
           - "D. Tổng hợp và bảo vệ": sessions/02-D-cn-defence.md
-      - "OS Session 3 — Linux":
+      - "Trình bày CN": defence/cn.md
+      - "Demo CN": demo/cn.md
+  - "Hệ điều hành (OS)":
+      - "Session 3 — Linux":
           - "A. Lý thuyết": sessions/03-A-linux-theory.md
           - "B. Pipeline thực tế": sessions/03-B-linux-pipeline.md
-          - "C. Bằng chứng": sessions/03-C-linux-evidence.md
-      - "OS Session 4 — STM32":
-          - "A. RTOS và UART": sessions/04-A-rtos-theory.md
+          - "C. Thí nghiệm và độ tin cậy": sessions/03-C-linux-evidence.md
+      - "Session 4 — FreeRTOS supervisor":
+          - "A. Lý thuyết RTOS và UART": sessions/04-A-rtos-theory.md
           - "B. Firmware và Stateflow": sessions/04-B-stm32-implementation.md
           - "C. Fault injection": sessions/04-C-supervisor-evidence.md
-  - "Trình bày với thầy":
-      - "Luyện bảo vệ": defence/index.md
-      - "Hỏi ngoài phần mình": defence/outside.md
-  - "Demo phần cứng": demo/index.md
+      - "Trình bày OS": defence/os.md
+      - "Demo OS": demo/os.md

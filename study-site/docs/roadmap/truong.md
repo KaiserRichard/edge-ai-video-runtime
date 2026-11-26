@@ -20,6 +20,8 @@ Phần bạn trình bày là nguồn ảnh, RTP sender, serialization, channel v
 
 ## Bước 3 — Luyện trình bày
 
+Trang luyện: [Trình bày CN](../defence/cn.md) · [Demo CN](../demo/cn.md)
+
 - Nguồn synthetic/JPEG/camera dùng chung giao diện; 15 FPS → 66.67 ms (SOURCE/CALCULATED).
 - Sequence modulo 65536, media clock 90 kHz; payload custom PT 96. Phân biệt 1200 B trong Python và SimEvents (SOURCE).
 - T3 loss 5.2% → frame loss 24%; GE 5.3% → 8.8% (MEASURED).

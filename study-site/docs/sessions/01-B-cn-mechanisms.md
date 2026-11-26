@@ -64,7 +64,7 @@ Latency là thời gian từ capture đến result của một frame. Age of Inf
 
 ![Kết quả FIFO so với latest-value](../assets/fig/plots/07_fifo_latest.png)
 
-T7 cho thấy AoI giảm từ 623 xuống 204 ms trong khi số kết quả/s gần như không đổi (MEASURED, synthetic service). Chi tiết ở Session 2 C6. Cơ chế này liên quan trực tiếp đến tính mới của dữ liệu bên OS, nhưng bằng chứng và đồng hồ đo khác nhau.
+T7 cho thấy AoI giảm từ 623 xuống 204 ms trong khi số kết quả/s gần như không đổi (MEASURED, synthetic service). Chi tiết ở Session 2 C6. Lý do: với latest-value, ảnh chờ cũ bị thay bằng ảnh mới nhất, nên kết quả AI trả về mô tả cảnh gần hiện tại hơn; còn tốc độ xử lý của AI không đổi, nên số kết quả mỗi giây gần như giữ nguyên.
 
 ## B. Trắc nghiệm cuối phần
 

@@ -64,9 +64,56 @@
       result.textContent = `Hoàn thành ${t} ms; deadline 100 ms: ${t <= 100 ? 'đúng hạn, được phát' : 'muộn, bị loại'}. Ví dụ minh họa.`; };
     range.addEventListener('input', update); host.append(range, result); update();
   }
+  // --- Persona: the "Bạn là ai?" choice selects a reading roadmap (not a login). ---
+  const PEOPLE = { hieu: 'Hiếu', vinh: 'Vinh', manh: 'Mạnh', truong: 'Trường', khanh: 'Khánh' };
+  const CN_ONLY = ['manh', 'truong'];
+  const OS_PATH = /\/(sessions\/0[34]-[^/]+|defence\/os|demo\/os)\/?(index\.html)?$/;
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  function homeHref() { const a = document.querySelector('.md-header__button.md-logo'); return a ? a.getAttribute('href') : '/'; }
+  function setupPersona() {
+    const m = location.pathname.match(/\/roadmap\/(hieu|vinh|manh|truong|khanh)\/?/);
+    if (m) store('oscn-persona', m[1]);
+    const who = store('oscn-persona');
+    if (!who || !PEOPLE[who]) return;
+    if (CN_ONLY.includes(who)) {
+      document.querySelectorAll('.md-nav a[href]').forEach(a => {
+        if (OS_PATH.test(new URL(a.href, location.href).pathname)) {
+          const top = a.closest('.md-nav--primary > .md-nav__list > .md-nav__item') || a.closest('.md-nav__item');
+          if (top) top.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('.md-footer__link').forEach(a => {
+        if (OS_PATH.test(new URL(a.href, location.href).pathname)) a.style.display = 'none';
+      });
+    }
+    const inner = document.querySelector('.md-content__inner');
+    if (inner && !inner.querySelector('.persona-bar')) {
+      const bar = document.createElement('div'); bar.className = 'persona-bar';
+      const scope = CN_ONLY.includes(who) ? ' · chỉ môn Mạng máy tính' : '';
+      bar.innerHTML = `Lộ trình đang xem: <strong>${PEOPLE[who]}</strong>${scope} · <a href="${homeHref()}">Đổi người</a>`;
+      inner.prepend(bar);
+    }
+  }
+  // --- Click a figure to see it at full size (no resizing of technical screenshots). ---
+  function setupZoom() {
+    document.querySelectorAll('.md-content article img').forEach(img => {
+      if (img.dataset.zoom || img.closest('a')) return; img.dataset.zoom = '1';
+      img.classList.add('zoomable'); img.title = 'Bấm để phóng to';
+      img.addEventListener('click', () => {
+        const ov = document.createElement('div'); ov.className = 'zoom-overlay'; ov.setAttribute('role', 'dialog');
+        const big = document.createElement('img'); big.src = img.currentSrc || img.src; big.alt = img.alt;
+        const hint = document.createElement('p'); hint.textContent = 'Bấm hoặc nhấn Esc để đóng';
+        ov.append(big, hint); document.body.append(ov);
+        const close = () => { ov.remove(); document.removeEventListener('keydown', esc); };
+        const esc = e => { if (e.key === 'Escape') close(); };
+        ov.addEventListener('click', close); document.addEventListener('keydown', esc);
+      });
+    });
+  }
   function init() {
     document.querySelectorAll('.quiz').forEach(setupQuiz);
     document.querySelectorAll('[data-oscn-deadline]').forEach(setupDeadline);
+    setupPersona(); setupZoom();
   }
   if (typeof document$ !== 'undefined') document$.subscribe(init);
   else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

@@ -23,6 +23,8 @@ Phần bạn trình bày là Linux pipeline của OS và vòng điều khiển A
 
 ## Bước 3 — Luyện trình bày
 
+Trang luyện: [Trình bày CN](../defence/cn.md) · [Demo CN](../demo/cn.md) · [Trình bày OS](../defence/os.md) · [Demo OS](../demo/os.md)
+
 - OS: camera → inference → bridge; heartbeat và age-at-send do Linux tạo, MCU kiểm tra độc lập.
 - OS: E3 memrate chỉ đổi bridge không giải quyết backlog; 6660→6958 ms mean AoI (MEASURED PTY theo v1, FLAGGED theo v2). OS-T4 đổi input 192→92.8 ms idle; 334.7→223.5 ms memrate (MEASURED PTY, 3 repeat).
 - CN: Stateflow loss >2% giảm scale ×0.8; Python dùng ngưỡng >5%, quality/resolution (SOURCE).

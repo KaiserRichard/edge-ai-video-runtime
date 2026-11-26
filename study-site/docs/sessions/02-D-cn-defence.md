@@ -104,3 +104,14 @@ T7 là đo trên Pi/laptop với synthetic AI service.
 Implementation và bằng chứng thử nghiệm là hai phạm vi khác nhau.
 </div>
 </div>
+
+## Phụ lục (không bắt buộc)
+
+??? info "Liên hệ với môn Hệ điều hành — đọc thêm, không bắt buộc"
+    Phần này chỉ dành cho người học cả hai môn (Hiếu, Vinh). Nó không nằm trong lộ trình bắt buộc, trắc nghiệm hay phần bảo vệ CN.
+
+    **Hai hàng đợi ở hai chỗ khác nhau.** Trong CN, hàng đợi FIFO/latest-value nằm trên laptop, giữa receiver (ảnh đã hoàn chỉnh, đúng hạn) và mô hình AI; T7 đo AoI của kết quả AI trên đồng hồ Pi. Trong OS, hàng đợi input và hàng đợi bridge nằm trên Raspberry Pi, giữa camera, inference và bridge UART; OS-T4 và E3/E3b đo trên đường đi tới MCU. Cùng tên chính sách nhưng vị trí hàng đợi, đồng hồ và biên đo khác nhau, nên không so sánh trực tiếp các con số.
+
+    **Chờ để liên tục, hay bỏ để mới.** Playout buffer của CN cố tình chờ thêm một khoảng để ảnh phát đều, chấp nhận trễ hơn. Latest-value (ở cả hai môn) bỏ dữ liệu cũ để giữ thông tin mới, chấp nhận mất một số ảnh. Không chính sách nào tốt tuyệt đối; chọn theo yêu cầu của ứng dụng.
+
+    **Thứ tự sự kiện cùng thời điểm.** Trong SimEvents, thứ tự hai sự kiện trùng thời điểm do event calendar quyết định (C8). Trong firmware OS, supervisor cố tình kiểm tra hạn trước rồi mới nhận frame mới, để frame đến muộn không che một lần vi phạm timeout.

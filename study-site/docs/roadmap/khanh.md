@@ -27,6 +27,8 @@ Thời lượng là ước lượng lượt đầu; 1C chỉ đọc, demo phần
 
 ## Bước 3 — Luyện trình bày
 
+Trang luyện: [Trình bày CN](../defence/cn.md) · [Demo CN](../demo/cn.md) · [Trình bày OS](../defence/os.md) · [Demo OS](../demo/os.md)
+
 **OS:** Vinh → Hiếu. **CN:** Trường → Mạnh → Hiếu → Vinh. Chuyển lời theo roadmap cá nhân; không cần Khánh chen vào. Nắm các mốc chung: F2 ~100 ms sau HB cuối; F5 ~175/475 ms sau INF cuối; T3 5.2%→24%; T7 623→204 ms (MEASURED); Stage B 73.16→87.07% (SIMULATED). Đọc [tổng kết CN](../sessions/02-D-cn-defence.md) và [bằng chứng supervisor](../sessions/04-C-supervisor-evidence.md).
 
 ## Checklist tổng quan (không phải phần trình bày)

@@ -10,9 +10,9 @@ Sau phần này, bạn giải thích được toàn bộ sản phẩm từ lúc 
 
 **Quy ước bằng chứng:** SOURCE = cấu hình hoặc mã đã đọc; MEASURED = kết quả đo được báo cáo; SIMULATED = kết quả mô phỏng đã lưu; CALCULATED = tính từ dữ liệu đã nêu. Ví dụ minh họa không phải lần chạy mới. FLAGGED/UNKNOWN = chưa đủ điều kiện xác nhận. P50 là trung vị; P95 là phân vị 95%.
 
-## A1. Bài toán và hai đường dữ liệu
+## A1. Bài toán: đưa video từ camera tới máy xử lý qua mạng
 
-Ta có Raspberry Pi 5, camera, laptop và một STM32 dùng cho bài OS. Bài CN tập trung vào truyền video qua mạng và xử lý ảnh ở máy nhận. Bài OS tập trung vào tính mới của kết quả và giám sát độc lập. Không được coi hai đường chức năng này là một thí nghiệm đồng thời đã được xác minh.
+Ta có một Raspberry Pi 5 gắn camera và một laptop nối với nhau qua mạng. Pi chụp ảnh, nén thành JPEG rồi gửi qua mạng; laptop nhận, ghép lại thành ảnh, phát đúng hạn và đưa ảnh cho mô hình AI xử lý. Vấn đề của môn Mạng máy tính là: mạng có thể làm mất gói, làm gói đến trễ và đến không đều, vậy làm sao để ảnh vẫn tới kịp và kết quả AI vẫn còn mới?
 
 ```mermaid
 flowchart LR

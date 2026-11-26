@@ -3,7 +3,7 @@ title: "Session 3 — A. Nền tảng hệ điều hành Linux"
 course: OS
 session: 3
 part: A
-prerequisites: ["CN Session 2 hoặc kiến thức hàng đợi cơ bản"]
+prerequisites: []
 ---
 # SESSION 3 — Linux trên Raspberry Pi
 
