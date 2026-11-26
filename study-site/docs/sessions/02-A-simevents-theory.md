@@ -6,7 +6,7 @@ part: A
 ---
 # Session 2 — A. Nền tảng SimEvents
 
-Sau phần này, bạn phân biệt được sản phẩm thật với mô hình toán học, đọc được entity, event và signal trong SimEvents, và biết vì sao nhóm chuyển sang phiên bản v2.
+Sau phần này, bạn phân biệt được sản phẩm thật với mô hình toán học, đọc được entity, event và signal trong SimEvents và biết mô hình v2 của nhóm được dựng từ những khối nào.
 
 **Quy ước bằng chứng:** SOURCE = cấu hình hoặc mã đã đọc; MEASURED = kết quả đo được báo cáo; SIMULATED = kết quả mô phỏng đã lưu; CALCULATED = tính từ dữ liệu đã nêu. Ví dụ minh họa không phải lần chạy mới. FLAGGED/UNKNOWN = chưa đủ điều kiện xác nhận. P50 là trung vị; P95 là phân vị 95%.
 
@@ -59,32 +59,6 @@ Ví dụ một packet trong frame 1 có sequence 0, fragment 1, count 6, size 12
 
 Entity wire mang từng đối tượng. Signal wire mang giá trị số như scale AIMD. Hai loại dây phối hợp tạo mô hình lai (hybrid simulation) giữa event và điều khiển lấy mẫu.
 
-## A4. Tại sao chuyển từ v1 sang v2?
-
-SOURCE: [`sim/study_simevents_v2/SIMEVENTS_V2_REPORT.md`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/SIMEVENTS_V2_REPORT.md), [`build_cn_simevents_v2.m`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/build_cn_simevents_v2.m). v1 sử dụng MATLAB Discrete-Event System `CNSEStage`; nhiều cơ chế nằm trong code. v2 thay các khối đó bằng khối native. Packetizer tách count/replicate/stamp; channel tách loss/delay; receiver tách jitter, deadline, counter. v2 vẫn cần event action và helper cho RNG, RR, trace. Nó không phải mô hình không có code.
-
-## A5. Cầu nối Data Communications — Gilbert–Elliott và RL
-
-Mất độc lập giống kênh có lỗi không nhớ quá khứ. Gilbert–Elliott là chuỗi Markov hai trạng thái. Trong cấu hình T3 thực tế, trạng thái Good không mất packet, Bad mất tất cả; xác suất chuyển G→B là 1.316%, B→G là 25% (SOURCE từ qdisc báo cáo).
-
-```mermaid
-stateDiagram-v2
- G: Good - packet sống
- B: Bad - packet mất
- G --> B: p
- B --> G: r
- G --> G: 1-p
- B --> B: 1-r
-```
-
-\[
-P_B=\frac{p}{p+r}\approx 0.05,\qquad E[L_B]=1/r=4\text{ packet}.
-\]
-
-CALCULATED: loss trung bình khoảng 5%, burst trung bình 4 packet. Vì thế `ge5_b4`. Đây mới là Markov chain mô tả môi trường; chưa có agent, action hay reward nên không phải bài toán RL. Sender chỉ quan sát một phần qua RR. AIMD là luật điều khiển xác định, không phải RL.
-
-Config YAML cũ khác actual qdisc trong [`hw_tables.md`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/cn/rtp/report/hw_tables.md); khi giải thích số đo, dùng cấu hình thực đã báo cáo.
-
 ## A. Trắc nghiệm cuối phần
 
 <div class="quiz" markdown>
@@ -113,15 +87,3 @@ Replicator tạo số bản sao theo count đã tính.
 </div>
 </div>
 
-<div class="quiz" markdown>
-<p class="quiz-q">Tại sao v2 vẫn có code?</p>
-
-- [ ] Không còn block native
-- [x] Mã hỗ trợ attribute, RNG, RR và trace
-- [ ] Vì nó là ONNX
-- [ ] Vì mất khả năng mô phỏng event
-
-<div class="quiz-why" markdown>
-Native blocks làm rõ cơ chế; helper vẫn cần cho một số thao tác.
-</div>
-</div>

@@ -553,7 +553,7 @@ stateDiagram-v2
      \[
      E[L_B] = \frac{1}{r} = \frac{1}{0.25} = 4\text{ gói liên tiếp}
      \]
-   Đó chính là lý do cấu hình trong thí nghiệm mang tên **`ge5_b4`** (trung bình mất `5%`, chùm dài trung bình `4` gói). Lưu ý nhỏ: đây chỉ là một chuỗi Markov mô tả *môi trường kênh truyền*, không phải bài toán Học tăng cường (RL), và bộ điều khiển AIMD của chúng ta dùng luật xác định chứ không dùng RL.
+   Đó chính là lý do cấu hình trong thí nghiệm mang tên **`ge5_b4`** (trung bình mất `5%`, chùm dài trung bình `4` gói).
 
 2. **Luật bốc trễ mạng (`sim/+course/Delay.m`):**
    Với mỗi gói sống sót gửi ở thời điểm \(t\), độ trễ truyền lan được bốc theo công thức:

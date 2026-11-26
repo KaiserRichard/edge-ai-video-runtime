@@ -37,13 +37,6 @@ SIMULATED, saved `B_adaptive1.mat`, `rateLog` (giây, scale). Loss step là đi�
 
 Trước loss step, rate tăng từ 1 lên 1.25. RR mới tới sau step nên giảm lần đầu ở 16.009 s. Chạm floor 0.15 ở 25.014 s. Sau phục hồi ở 35 s, cần các RR sạch nên tăng ở 38.013 s và mới đạt 0.35 ở cuối capture. Trace còn tăng lên 0.40 ở 50.011 s trong drain, ngoài capture window; `rate_final` của CSV chỉ tính đến 50 s nên vẫn là 0.35. Controller giảm nhanh nhưng phục hồi chậm.
 
-### C1.2. Dashboard gốc
-
-![Stage B dashboard phiên bản v1](../assets/fig/simevents/Stage_B_Dashboard.png)
-
-!!! note "Cách đọc hình"
-    Đây là hình lưu từ v1, không phải hình dashboard native v2. Đọc các panel cùng trục thời gian: target bitrate, loss, jitter, occupancy, AoI. So sánh fixed với adaptive theo cùng đoạn kênh bị suy giảm. Bảng compare xác nhận aggregate của hai loss-step run v1/v2 khớp. Trace rate bên trên lấy từ v2 đã lưu.
-
 ### C1.3. So sánh định lượng
 
 **SIMULATED — Stage B loss-step:**
@@ -208,40 +201,6 @@ T9 dùng hai clock domain. Trên Pi đo capture, first send và result receipt; 
 
 Kiểm tra tổng thành phần theo từng cặp frame Pi có max error 0.000 ms theo độ chính xác bảng. Không lấy median/P95 của các thành phần khác clock trừ nhau để khẳng định one-way latency. Không cần đồng bộ clock để tính một khoảng thời gian trên cùng clock.
 
-## C8. Verification — v2 có giữ hành vi v1?
-
-SOURCE: [`SIMEVENTS_V2_REPORT.md`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/SIMEVENTS_V2_REPORT.md), `shared_test_results.csv`, `stage_*_compare.csv`, [`tie_check.csv`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/tie_check.csv).
-
-| Kiểm tra | Kết quả đã báo cáo |
-|---|---:|
-| Regression suite | 31/31 passed |
-| Trace-oracle checks, 43 run | 1032/1032 passed |
-| Stage A | 100/100 identical |
-| Stage B | 194/200 identical, 194/200 within tolerance |
-| Stage C | 554/560 identical, 555/560 within tolerance |
-
-Đây là consistency với model cũ và oracle, không phải accuracy tuyệt đối so với hardware.
-
-### C8.1. Event tie — hai sự kiện cùng thời điểm
-
-30 FPS cho chu kỳ 33.33 ms, service 50 ms. Các mốc danh định trùng mỗi 100 ms. Giả sử F1 đang hoàn thành, F2 đang chờ, F3 vừa đến đúng lúc đó:
-
-```mermaid
-flowchart TB
- subgraph V1[v1: arrival trước]
- A[F3 tới và thay F2] --> B[F1 xong] --> C[Xử lý F3]
- end
- subgraph V2[v2: completion trước]
- D[F1 xong] --> E[Xử lý F2] --> F[F3 tới và chờ]
- end
-```
-
-Kết quả khác do thứ tự event của scheduler. v1 đặt priority arrival trước; native v2 phục vụ completion trước ở trường hợp tie. Cùng policy latest không nhất thiết cùng từng timestamp.
-
-### C8.2. Thử nhiễu động có kiểm soát
-
-SOURCE: [`cnse2_tie_check.m`](https://github.com/KaiserRichard/edge-ai-video-runtime/blob/main/sim/study_simevents_v2/cnse2_tie_check.m) thay service time 50 ms ±1 ns để bỏ trùng chính xác. Kết quả 32/32 metric rows identical, max abs diff 0 theo báo cáo. Đây là cách cô lập nguyên nhân, không thay hàng loạt tham số. Ý nghĩa trong mô phỏng mạng: khi hai sự kiện có cùng thời điểm, event calendar của SimEvents phải chọn một thứ tự; thứ tự đó quyết định ảnh nào khối Inference lấy ra tiếp theo. Lệch đi 1 ns làm hai sự kiện không còn trùng, nên kết quả không còn phụ thuộc vào cách phá thế hòa.
-
 ## C. Trắc nghiệm cuối phần
 
 <div class="quiz" markdown>
@@ -283,15 +242,3 @@ AoI 623→204 ms, results/s 17.63→17.52. Workload synthetic.
 </div>
 </div>
 
-<div class="quiz" markdown>
-<p class="quiz-q">31/31 regression pass chứng minh gì?</p>
-
-- [ ] Mọi hardware timing đã đúng
-- [ ] T8 hardware hoàn tất
-- [x] Mô hình vượt các test đã định nghĩa
-- [ ] JPEG accuracy đã được xác nhận
-
-<div class="quiz-why" markdown>
-Verification không thay thế validation trên thiết bị thật.
-</div>
-</div>
