@@ -84,3 +84,11 @@ img.zoomable { cursor: zoom-in; }
 .zoom-overlay img { max-width: none; width: auto; height: auto; margin: auto; background: #fff; }
 @media (max-width: 1200px) { .zoom-overlay img { max-width: 200%; } }
 .zoom-overlay p { color: #ddd; font-size: .7rem; margin: .5rem 0 0; }
+/* clocks widget (CN-T9 two-clock diagram) */
+.md-typeset .w-btns { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:.6rem; }
+.md-typeset .w-btn { border:1px solid var(--md-default-fg-color--lighter); background:transparent; color:inherit; border-radius:.4rem; padding:.2rem .7rem; cursor:pointer; font-size:.75rem; }
+.md-typeset .w-btn.on { background:var(--md-accent-fg-color); border-color:var(--md-accent-fg-color); color:#fff; }
+.md-typeset .w-clocks svg { max-width:680px; display:block; margin:0 auto; }
+.md-typeset .w-hot { cursor:pointer; }
+.md-typeset .w-hot.sel { filter:drop-shadow(0 0 4px var(--md-accent-fg-color)); }
+.md-typeset .w-clock-info { border-left:3px solid var(--md-accent-fg-color); padding:.3rem .8rem; margin-top:.6rem; }

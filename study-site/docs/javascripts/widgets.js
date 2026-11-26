@@ -1,5 +1,5 @@
 /* Interactive teaching widgets. Usage in Markdown: <div class="widget" data-widget="NAME"></div>
-   NAME: serialization | framesize | fragments | jitter | aimd | framesuccess | deadline | aoi | queue
+   NAME: serialization | framesize | fragments | jitter | aimd | framesuccess | deadline | aoi | queue | clocks
    All are teaching calculators built from the model's own equations; none is a new simulation. */
 (() => {
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
@@ -113,6 +113,59 @@
         a.v.textContent = fmt(mu, 1) + '/s'; b.v.textContent = fmt(rho, 2); c.v.textContent = rho > 1 ? 'Quá tải' : 'Ổn định'; c.v.className = 'w-num ' + (rho > 1 ? 'bad' : 'good'); };
       [lam, svc].forEach(x => x.input.addEventListener('input', up)); up();
       h.append(lam.wrap, svc.wrap, grid, note('Khi ρ > 1, FIFO luôn đầy dần và ảnh chờ càng lâu càng cũ; latest-value bỏ ảnh cũ để xử lý ảnh mới nhất. CALCULATED.'));
+    },
+    clocks(h) {
+      // CN-T9 measured per-frame breakdown (cn/rtp/report/hw_tables.md), mean of per-run P50 / P95, ms.
+      const D = {
+        noloss_D50: { cap: [0.07, 0.09], s2r: [67.84, 72.95], tot: [67.91, 73.03], play: [50.26, 50.54], q: [0.12, 0.13], inf: [12.51, 12.93] },
+        loss5_D50: { cap: [0.07, 0.09], s2r: [67.93, 73.58], tot: [68.01, 73.66], play: [50.16, 50.42], q: [0.12, 0.14], inf: [12.52, 13.08] } };
+      const INFO = {
+        cap: ['Capture → first send', 'pi', 'Nén xong ảnh tới lúc gói đầu tiên rời socket. Rất ngắn.'],
+        out: ['Mạng chiều đi', 'none', 'Không đo riêng được: gửi theo đồng hồ Pi, nhận theo đồng hồ laptop. Hai đồng hồ không đồng bộ nên không trừ chéo.'],
+        play: ['Playout wait', 'lap', 'Laptop cố ý giữ frame tới hạn phát (độ sâu bộ đệm 50 ms). Đây là phần lớn nhất của độ trễ.'],
+        q: ['AI queue wait', 'lap', 'Frame chờ trong hàng đợi AI trước khi được xử lý. Gần như bằng 0 vì AI không quá tải.'],
+        inf: ['Inference', 'lap', 'Thời gian MobileNetV2 xử lý một frame trên laptop.'],
+        back: ['Kết quả chiều về (AIRS)', 'none', 'Gói kết quả AI đi từ laptop về Pi. Cũng không đo riêng được vì khác đồng hồ.'],
+        tot: ['Tổng capture → result receipt', 'pi', 'Đo hoàn toàn trên đồng hồ Pi: từ lúc chụp tới lúc Pi nhận kết quả. Hợp lệ vì cả hai mốc cùng một đồng hồ.'] };
+      let cfg = 'noloss_D50', k = 0, sel = 'tot';
+      const bar = el('div', 'w-btns');
+      const mk = (txt, on) => { const b = el('button', 'w-btn', txt); b.type = 'button'; b.addEventListener('click', on); bar.append(b); return b; };
+      const b1 = mk('noloss_D50', () => { cfg = 'noloss_D50'; draw(); }), b2 = mk('loss5_D50', () => { cfg = 'loss5_D50'; draw(); });
+      const b3 = mk('P50', () => { k = 0; draw(); }), b4 = mk('P95', () => { k = 1; draw(); });
+      const box = el('div', 'w-clocks'); const info = el('div', 'w-clock-info');
+      const draw = () => {
+        [b1, b2].forEach(b => b.classList.toggle('on', b.textContent === cfg)); b3.classList.toggle('on', k === 0); b4.classList.toggle('on', k === 1);
+        const d = D[cfg], v = x => d[x][k];
+        const PX = 120, LX = 520, top = 70, s = 4.2;              // 4.2 px per ms on the laptop axis
+        const yCap = top, ySend = top + 22, yRecv = ySend + 40;
+        const yPlay = yRecv + v('play') * s, yQ = yPlay + Math.max(6, v('q') * s), yInf = yQ + v('inf') * s, yRes = yInf + 40;
+        const seg = (id, x, y1, y2, col) => `<rect data-k="${id}" x="${x - 9}" y="${y1}" width="18" height="${Math.max(4, y2 - y1)}" rx="3" fill="${col}" class="w-hot${sel === id ? ' sel' : ''}"/>`;
+        const dot = (x, y, col) => `<circle cx="${x}" cy="${y}" r="7" fill="${col}"/>`;
+        const lab = (x, y, t, a) => `<text x="${x}" y="${y + 4}" text-anchor="${a}" fill="currentColor" font-size="13">${t}</text>`;
+        const arrow = (id, x1, y1, x2, y2) => `<g data-k="${id}" class="w-hot${sel === id ? ' sel' : ''}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#3B82F6" stroke-width="3" stroke-dasharray="${sel === id ? '0' : '7 5'}"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width="18"/></g>`;
+        const H = yRes + 50;
+        box.innerHTML = `<svg viewBox="0 0 680 ${H}" width="100%" role="img" aria-label="Kiến trúc đo CN-T9: đồng hồ Pi và đồng hồ laptop">
+          <text x="${PX}" y="30" text-anchor="middle" fill="currentColor" font-size="16" font-weight="700">Đồng hồ Pi</text>
+          <text x="${LX}" y="30" text-anchor="middle" fill="currentColor" font-size="16" font-weight="700">Đồng hồ laptop</text>
+          <line x1="${PX}" y1="45" x2="${PX}" y2="${H - 10}" stroke="currentColor" stroke-opacity=".35" stroke-width="2"/>
+          <line x1="${LX}" y1="45" x2="${LX}" y2="${H - 10}" stroke="currentColor" stroke-opacity=".35" stroke-width="2"/>
+          <g data-k="tot" class="w-hot${sel === 'tot' ? ' sel' : ''}"><path d="M ${PX - 30} ${yCap} H ${PX - 50} V ${yRes} H ${PX - 30}" fill="none" stroke="#16A34A" stroke-width="3"/><rect x="${PX - 62}" y="${yCap}" width="30" height="${yRes - yCap}" fill="transparent"/>
+          <text x="${PX - 62}" y="${(yCap + yRes) / 2}" transform="rotate(-90 ${PX - 62} ${(yCap + yRes) / 2})" text-anchor="middle" fill="#16A34A" font-size="13">tổng ${fmt(v('tot'))} ms</text></g>
+          ${seg('cap', PX, yCap, ySend, '#16A34A')}
+          ${arrow('out', PX, ySend, LX, yRecv)} ${arrow('back', LX, yInf, PX, yRes)}
+          ${seg('play', LX, yRecv, yPlay, '#B45309')} ${seg('q', LX, yPlay, yQ, '#6B7280')} ${seg('inf', LX, yQ, yInf, '#15803D')}
+          ${dot(PX, yCap, '#16A34A')}${dot(PX, ySend, '#16A34A')}${dot(PX, yRes, '#16A34A')}${dot(LX, yRecv, '#3B82F6')}${dot(LX, yPlay, '#3B82F6')}${dot(LX, yInf, '#3B82F6')}
+          ${lab(PX + 16, yCap, 'Chụp ảnh', 'start')}${lab(PX + 16, ySend, 'Gửi gói đầu', 'start')}${lab(PX + 16, yRes, 'Nhận kết quả AI', 'start')}
+          ${lab(LX - 16, yRecv, 'Nhận gói', 'end')}${lab(LX - 16, yPlay, 'Hạn phát (playout)', 'end')}${lab(LX - 16, yInf, 'AI xong', 'end')}
+          ${lab(LX + 16, (yRecv + yPlay) / 2, 'playout ' + fmt(v('play')), 'start')}${lab(LX + 16, yQ - 2, 'hàng đợi ' + fmt(v('q')), 'start')}${lab(LX + 16, (yQ + yInf) / 2, 'AI ' + fmt(v('inf')), 'start')}
+        </svg>`;
+        box.querySelectorAll('[data-k]').forEach(n => n.addEventListener('click', () => { sel = n.dataset.k; draw(); }));
+        const [name, clk, txt] = INFO[sel], val = d[sel] ? `${fmt(d[sel][k])} ms (${k ? 'P95' : 'P50'}, MEASURED)` : 'không đo riêng';
+        const ck = { pi: 'Đồng hồ Pi', lap: 'Đồng hồ laptop', none: 'Hai đồng hồ khác nhau' }[clk];
+        info.innerHTML = `<div class="w-cap">${name} · ${ck}</div><div class="w-num">${val}</div><p class="w-note">${txt}</p>`;
+      };
+      draw();
+      h.append(bar, box, info, note('Bấm vào từng đoạn trên hình. Khoảng trên cùng một đồng hồ thì đo được; mũi tên đi qua mạng nối hai đồng hồ khác nhau nên không tách được độ trễ một chiều. Số liệu CN-T9, trung bình 5 lần chạy, MEASURED.'));
     },
   };
 
