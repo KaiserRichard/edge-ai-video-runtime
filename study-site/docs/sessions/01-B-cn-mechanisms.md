@@ -6,60 +6,117 @@ part: B
 ---
 # Session 1 — B. RTP, receiver và producer–consumer
 
-Session 1A đã khảo sát toàn bộ đường ống truyền ảnh từ camera trên Raspberry Pi 5 sang laptop để chạy mô hình AI. Bài giảng này phân tích các cơ chế mạng tầng giao vận và ứng dụng trong đường ống: đóng gói RTP, xử lý mất gói, lọc jitter, tái tạo frame, định thời playout, phản hồi RTCP và chính sách hàng đợi suy luận đo bằng Age of Information (AoI).
+Ở Session 1A, bạn đã thấy sản phẩm từ xa: Raspberry Pi 5 chụp ảnh, nén JPEG, gửi qua mạng sang laptop; laptop ghép ảnh lại, chạy AI rồi gửi kết quả về. Bài này mở từng "hộp" trên đường đi đó và hỏi: **bên trong nó thực sự làm gì, và tại sao phải làm như vậy?**
+
+Sau bài này, bạn sẽ tự giải thích được bằng lời của mình:
+
+1. Tại sao video thời gian thực dùng **UDP** chứ không dùng **TCP**.
+2. Một gói tin của nhóm gồm những lớp "nhãn" nào, mỗi lớp dài bao nhiêu byte.
+3. Từng trường của **RTP header** — sequence, timestamp 90 kHz, SSRC, marker, PT 96 — để làm gì.
+4. Vì sao một **frame** (ảnh) phải cắt thành nhiều **packet** (gói), và mất một gói thì cả ảnh hỏng.
+5. Máy nhận ghép ảnh, đo **jitter**, đặt **hạn phát (playout deadline)** như thế nào.
+6. Máy nhận "báo cáo" cho máy gửi bằng **RTCP Receiver Report** ra sao.
+7. Vì sao hàng đợi trước AI có thể làm kết quả AI **cũ** dù AI chạy đúng tốc độ, và đại lượng **Age of Information (AoI)** đo cái "cũ" đó thế nào — kèm kết quả đo thật **CN-T7**: tuổi trung bình của kết quả giảm từ 623 ms xuống 204 ms.
+
+!!! info "Cách đọc bài"
+    Mỗi phần đi theo ba tầng. **Hiểu bản chất**: ví dụ đời thường và sơ đồ đơn giản. **Hiểu dự án**: công thức, phép tính từng bước, mã nguồn thật và số đo thật. **Đào sâu để bảo vệ**: các hộp `???` mở rộng, chứa chi tiết mã và câu hỏi vặn — bạn có thể bỏ qua khi đọc lần đầu, nhưng nên mở trước buổi bảo vệ.
+
+    Nhãn số liệu nằm ngay trong câu: **SOURCE** (đọc từ mã nguồn hoặc file cấu hình), **MEASURED** (đo trên phần cứng), **SIMULATED** (từ mô phỏng), **CALCULATED** (tự tính từ các số đã nêu), **Ví dụ minh họa** (số do bài giảng đặt ra để dạy, không phải số đo), **UNVERIFIED** (chưa kiểm chứng được từ tệp nguồn).
+
+Toàn bộ bài bám theo một đường ống duy nhất. Hãy giữ hình này trong đầu suốt bài:
 
 ```mermaid
 flowchart LR
   CAM["Camera"] --> JPG["Nén JPEG<br/>(1 frame)"]
-  JPG --> TX["RTP Sender<br/>phân mảnh packet"]
-  TX -->|"UDP (port 5004)<br/>mất, trễ, jitter"| RX["RTP Receiver<br/>đo jitter, lọc"]
-  RX --> RE["Ghép frame &<br/>playout deadline"]
-  RE --> Q["Hàng đợi AI<br/>(FIFO / latest)"]
-  Q --> AI["Inference<br/>(Synthetic / ONNX)"]
-  AI -.->|"RTCP APP 'AIRS'<br/>kết quả suy luận"| TX
-  RX -.->|"RTCP RR (port 5005)<br/>thống kê tiếp nhận"| TX
+  JPG --> TX["RTP Sender<br/>cắt thành packet"]
+  TX -->|"UDP qua mạng<br/>(có thể mất, trễ, đảo thứ tự)"| RX["RTP Receiver<br/>đếm, đo jitter"]
+  RX --> RE["Ghép frame +<br/>hạn phát (playout)"]
+  RE --> Q["Hàng đợi AI<br/>(FIFO hoặc latest)"]
+  Q --> AI["Inference"]
+  AI -.->|"kết quả AIRS"| TX
+  RX -.->|"RTCP Receiver Report<br/>(đường phản hồi)"| TX
 ```
+
+Đường liền là **đường đi thuận** của ảnh. Hai đường nét đứt là **đường ngược**: báo cáo chất lượng mạng (RTCP RR) và kết quả AI (AIRS). Mỗi phần dưới đây phóng to một khối.
 
 ---
 
-## B1. Giao thức truyền tải: Vì sao UDP thay vì TCP cho video thời gian thực?
+## B0. Ôn nhanh năm từ cơ bản: byte, ảnh, frame, packet, header/payload
 
-### B1.1. Hiện tượng Head-of-Line Blocking
-Trong truyền dẫn video phục vụ điều khiển và nhận thức thời gian thực, độ trễ và độ tươi dữ liệu quan trọng hơn độ tin cậy tuyệt đối. Giao thức TCP đảm bảo phân phát dữ liệu tuần tự và tin cậy thông qua cơ chế bắt tay, đánh số byte, gửi ACK và truyền lại (retransmission). Khi một phân đoạn TCP bị mất trên đường truyền:
-1. Bên nhận giữ lại toàn bộ các phân đoạn đến sau trong bộ đệm socket cho đến khi phân đoạn mất được truyền lại thành công.
-2. Ứng dụng AI ở tầng trên bị chặn hoàn toàn (**Head-of-Line Blocking - HoL**).
-3. Khi phân đoạn mất được bù, ứng dụng nhận cùng lúc một cụm frame cũ đã tích lũy trong hàng đợi, làm mất tính kịp thời của thông tin điều khiển.
+Nếu bạn đã đọc kỹ 1A, phần này chỉ mất hai phút. Nhưng đừng bỏ qua, vì cả bài sẽ tính bằng byte.
 
-UDP hoạt động theo cơ chế connectionless, truyền các datagram độc lập không có xác nhận hay gửi lại. Mất mát một datagram không cản trở việc phân phát các datagram tiếp theo tới ứng dụng. Đối với bài toán thị giác máy tính, một frame bị mất hoàn toàn có thể bỏ qua để xử lý frame kế tiếp đúng chu kỳ camera (66,67 ms ở 15 FPS).
+- **Bit** là một chữ số 0 hoặc 1. **Byte** là 8 bit. Kích thước dữ liệu đo bằng byte (B); tốc độ mạng đo bằng bit mỗi giây (b/s). Đổi byte sang bit thì nhân 8.
+- **Ảnh JPEG** là một dãy byte. Với nhóm, một ảnh 640×480 nén ở quality 75 thường dài khoảng 6–7 nghìn byte (xem 1A).
+- **Frame (khung hình)** là *một* ảnh chụp ở *một* thời điểm. Video là chuỗi frame. Ở 15 frame mỗi giây (15 FPS), hai frame cách nhau \(1/15\text{ s}\approx 66{,}67\text{ ms}\).
+- **Packet (gói tin)** là một khối dữ liệu mạng gửi đi trong một lần. Mạng giới hạn kích thước mỗi gói, nên một frame 6 nghìn byte phải cắt thành nhiều gói.
+- Mỗi gói có **header (phần đầu, "nhãn trên phong bì")** và **payload (phần ruột, "lá thư bên trong")**. Header nói gói này là gì, của ai, thứ mấy; payload là một mảnh byte của ảnh.
 
-### B1.2. Hiện thực socket trong dự án
-Hệ thống sử dụng RTP chạy trên nền UDP. Trong `cn/rtp/rtp/sender.py`, hàm `open_udp_pair` khởi tạo cặp socket UDP (`socket.SOCK_DGRAM`) theo chuẩn RFC 3550 §11:
-- Cổng chẵn cho luồng dữ liệu media RTP (mặc định 5004).
-- Cổng lẻ liền kề cho luồng điều khiển RTCP (mặc định 5005).
+!!! tip "Hình dung"
+    Bạn gửi một cuốn sách dày qua bưu điện, nhưng bưu điện chỉ nhận phong bì mỏng. Bạn xé sách thành nhiều tập, mỗi tập cho vào một phong bì. Trên mỗi phong bì bạn ghi: "sách số 7, tập thứ 3, tổng cộng 6 tập". **Tập giấy** là payload, **dòng ghi trên phong bì** là header. Người nhận chỉ đọc được sách khi có đủ cả 6 tập.
 
-```python
-def open_udp_pair(host, port):
-    """RFC 3550 §11: RTCP port = even RTP port + 1; port 0 allocates a pair."""
-    if port and (port < 1024 or port > 65534 or port % 2):
-        raise ValueError("RTP port must be even and in 1024..65534, or 0")
-    for _ in range(128):
-        rtp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        rtcp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-```
-*(SOURCE: `cn/rtp/rtp/sender.py`)*
-
-Sender không lưu trữ bộ đệm gửi lại; mỗi packet chỉ được phát qua hàm `sendto` một lần.
-
-<p class="key">TCP loại bỏ mất mát bằng cách đánh đổi độ trễ thông qua retransmission và HoL blocking; UDP chấp nhận mất packet để duy trì nhịp thời gian thực của chuỗi frame.</p>
+<p class="key">Frame là một ảnh; packet là một phong bì chứa một mảnh ảnh; header là nhãn ghi trên phong bì, payload là mảnh ảnh bên trong.</p>
 
 ---
 
-## B2. Đóng gói lồng nhau (Encapsulation) và kích thước packet
+## B1. Tại sao video trực tiếp dùng UDP chứ không dùng TCP?
 
-### B2.1. Cấu trúc các tầng header
-Dữ liệu ảnh JPEG được phân mảnh và bọc qua nhiều tầng giao thức trước khi đẩy xuống tầng liên kết dữ liệu.
+### B1.1. Vấn đề
 
-<svg viewBox="0 0 780 170" width="100%" style="max-width:780px;display:block;margin:1rem auto;" role="img" aria-label="Các lớp header của một gói RTP trong dự án">
+Mạng giữa Pi và laptop không hoàn hảo. Một gói có thể **mất** (bộ đệm ở switch đầy, nhiễu Wi-Fi), có thể **đến muộn**, và hai gói gửi liên tiếp có thể **đến ngược thứ tự** nếu chúng đi qua hàng đợi hoặc đường khác nhau.
+
+Có hai cách phản ứng. Cách thứ nhất: phát hiện gói mất rồi **gửi lại** cho đến khi nhận được, và không giao dữ liệu phía sau cho ứng dụng cho tới khi lỗ hổng được lấp. Đó là cách của **TCP (Transmission Control Protocol)**. Cách thứ hai: cứ gửi từng gói độc lập, mất thì thôi, ứng dụng tự lo. Đó là cách của **UDP (User Datagram Protocol)**.
+
+Với tải tệp, cách thứ nhất là đúng: một tệp thiếu một byte là tệp hỏng. Nhưng với video trực tiếp cho AI, "chờ cho đủ" lại gây hại. Hãy xem ví dụ.
+
+### B1.2. Ví dụ đơn giản: một gói mất làm tắc cả hàng
+
+Ví dụ minh họa: camera 15 FPS, cứ 66,67 ms có một frame mới. Gói thứ 3 của frame 1 bị mất. Giả sử việc phát hiện mất và gửi lại tốn khoảng 150 ms.
+
+| Thời điểm (ms) | Với TCP (đòi đủ, đúng thứ tự) | Với UDP + RTP (gửi tiếp, tự xử lý) |
+|---|---|---|
+| 0 | Frame 1 gửi đi, gói 3 mất | Frame 1 gửi đi, gói 3 mất |
+| 66,7 | Frame 2 đến laptop nhưng **bị giữ lại** vì frame 1 còn thiếu | Frame 2 đến, ghép đủ, giao cho AI |
+| 133,3 | Frame 3 đến, **vẫn bị giữ** | Frame 3 giao cho AI |
+| ≈150 | Gói 3 được gửi lại tới nơi; frame 1, 2, 3 cùng lúc được giải phóng | Frame 1 bị đánh dấu hỏng, bỏ qua |
+| Kết quả | AI nhận một cụm ảnh **cũ** cùng lúc, ảnh mới bị đẩy lùi | AI mất 1 ảnh, nhưng mọi ảnh khác đến **đúng nhịp** |
+
+Hiện tượng ở cột TCP gọi là **head-of-line blocking (tắc đầu hàng)**: một gói mất ở đầu hàng làm tất cả gói phía sau phải đợi, dù chúng đã đến nơi.
+
+Với AI quan sát cảnh đang diễn ra, một ảnh chụp từ 150 ms trước thường đã kém giá trị hơn ảnh vừa chụp. Bỏ một ảnh hỏng còn tốt hơn làm trễ cả chuỗi.
+
+### B1.3. Thuật ngữ
+
+- **UDP (User Datagram Protocol — giao thức gói dữ liệu người dùng)** gửi mỗi gói như một bức thư độc lập. UDP **không** đảm bảo gói đến nơi, **không** đảm bảo thứ tự, **không** gửi lại. Nó chỉ thêm 8 byte header: cổng nguồn, cổng đích, độ dài, checksum.
+- **TCP** đảm bảo dữ liệu đến đủ và đúng thứ tự bằng cách đánh số, xác nhận (ACK) và gửi lại. Cái giá là độ trễ khi có mất gói.
+- **RTP (Real-time Transport Protocol — giao thức truyền thời gian thực)** chạy **bên trên** UDP. RTP **không** làm UDP tin cậy hơn. Nó chỉ dán thêm nhãn (số thứ tự, mốc thời gian media, mã nguồn) để **máy nhận tự biết** gói nào mất, gói nào đảo thứ tự, gói nào thuộc ảnh nào.
+
+!!! warning "Hiểu lầm hay gặp khi bảo vệ"
+    "Dùng RTP thì không mất gói." — **Sai.** RTP chỉ giúp *phát hiện* mất gói và *sắp xếp* lại. Gói mất trên mạng vẫn mất hẳn; sản phẩm của nhóm không gửi lại gói RTP.
+
+### B1.4. Trong dự án
+
+Trong `cn/rtp/rtp/sender.py`, hàm `open_udp_pair` mở hai socket UDP (`socket.SOCK_DGRAM`): một cho RTP ở **cổng chẵn**, một cho RTCP ở **cổng lẻ ngay sau** (SOURCE, theo quy ước RFC 3550 §11). Mặc định máy nhận nghe RTP ở cổng 5004, nên RTCP ở 5005 (SOURCE: `receiver.py`, `--port` mặc định 5004; `sender.py`, `control_destination = port + 1`).
+
+Không có dòng nào trong `sender.py` gửi lại gói đã gửi. Mỗi packet được `sendto` một lần rồi thôi.
+
+??? question "Thầy hỏi: Vậy sao không dùng TCP rồi tắt cơ chế gửi lại đi?"
+    "Thưa thầy, TCP không cho ứng dụng tắt việc gửi lại hay bỏ qua thứ tự; đó là bản chất của giao thức. Nếu muốn 'mất thì bỏ', ta phải dùng UDP. RTP được thiết kế đúng cho việc này: nó cung cấp số thứ tự và mốc thời gian để ứng dụng tự quyết định chờ hay bỏ, thay vì giao thức quyết định thay."
+
+<p class="key">UDP gửi nhanh nhưng không hứa gì; RTP dán nhãn lên mỗi gói để máy nhận tự phát hiện mất và đảo thứ tự. Với video cho AI, bỏ một ảnh hỏng tốt hơn làm trễ cả chuỗi.</p>
+
+---
+
+## B2. Một gói tin của nhóm gồm những lớp nào? (đóng gói lồng nhau)
+
+### B2.1. Vì sao lại có nhiều lớp nhãn?
+
+Mỗi tầng mạng cần một loại thông tin khác nhau. Router cần biết **máy nào** nhận (địa chỉ IP). Hệ điều hành ở máy nhận cần biết **chương trình nào** nhận (cổng UDP). Chương trình nhận cần biết **gói này thuộc dòng video nào, thứ mấy, chụp lúc nào** (RTP). Và chương trình của nhóm cần biết **mảnh này nằm ở vị trí byte nào trong ảnh JPEG** (header riêng của nhóm).
+
+Thay vì một nhãn khổng lồ, mỗi tầng bọc thêm một lớp phong bì bên ngoài. Cách bọc lồng này gọi là **encapsulation (đóng gói lồng nhau)**.
+
+### B2.2. Sơ đồ một gói đầy
+
+<svg viewBox="0 0 780 170" width="100%" style="max-width:780px;display:block;margin:1rem auto;" role="img" aria-label="Các lớp header của một gói RTP đầy trong dự án">
   <rect x="10" y="30" width="90" height="50" rx="4" fill="rgba(99,102,241,0.18)" stroke="currentColor"/>
   <text x="55" y="52" text-anchor="middle" fill="currentColor" font-size="13" font-weight="700">IPv4</text>
   <text x="55" y="70" text-anchor="middle" fill="currentColor" font-size="12">20 B</text>
@@ -73,115 +130,233 @@ Dữ liệu ảnh JPEG được phân mảnh và bọc qua nhiều tầng giao t
   <text x="300" y="50" text-anchor="middle" fill="currentColor" font-size="12" font-weight="700">Header mảnh</text>
   <text x="300" y="68" text-anchor="middle" fill="currentColor" font-size="12">8 B (+4 B mảnh đầu)</text>
   <rect x="350" y="30" width="420" height="50" rx="4" fill="rgba(148,163,184,0.15)" stroke="currentColor"/>
-  <text x="560" y="52" text-anchor="middle" fill="currentColor" font-size="13" font-weight="700">Dữ liệu JPEG payload</text>
-  <text x="560" y="70" text-anchor="middle" fill="currentColor" font-size="12">1188 B (mảnh đầu) / 1192 B (mảnh sau)</text>
+  <text x="560" y="52" text-anchor="middle" fill="currentColor" font-size="13" font-weight="700">Dữ liệu JPEG</text>
+  <text x="560" y="70" text-anchor="middle" fill="currentColor" font-size="12">tối đa 1188 B (mảnh đầu) hoặc 1192 B (mảnh sau)</text>
   <line x1="250" y1="100" x2="770" y2="100" stroke="currentColor"/>
   <text x="510" y="118" text-anchor="middle" fill="currentColor" font-size="12">RTP payload ≤ 1200 B (tham số --mtu-payload)</text>
   <line x1="170" y1="138" x2="770" y2="138" stroke="currentColor"/>
-  <text x="470" y="156" text-anchor="middle" fill="currentColor" font-size="12">Packet RTP ≤ 1212 B (cột "bytes" trong receiver.csv)</text>
+  <text x="470" y="156" text-anchor="middle" fill="currentColor" font-size="12">Gói RTP ≤ 1212 B (cột "bytes" trong receiver.csv)</text>
   <text x="100" y="20" text-anchor="middle" fill="currentColor" font-size="11">IP datagram ≤ 1240 B</text>
 </svg>
 
-Cấu trúc từng tầng header:
-- **IPv4 Header (20 byte):** Định tuyến gói tin qua địa chỉ IP nguồn và đích.
-- **UDP Header (8 byte):** Phân phát dữ liệu tới tiến trình ứng dụng qua cổng dịch vụ (5004).
-- **RTP Fixed Header (12 byte):** RFC 3550 §5.1, mang thông tin đồng bộ thời gian và thứ tự packet.
-- **Project Payload Header (8 byte hoặc 12 byte):** Định dạng riêng của nhóm (không dùng RFC 2435). Cấu trúc gồm: `frame_id` (uint32, 4 B), `frag_offset` (uint24, 3 B), `flags` (uint8, 1 B, bit 0 đánh dấu `FLAG_FIRST`). Riêng mảnh đầu tiên (`FLAG_FIRST = 1`) có thêm tiền tố `total_length` (uint32, 4 B) chỉ tổng kích thước ảnh JPEG (SOURCE: `cn/rtp/rtp/payload.py`).
+Đọc từ trái sang phải giống như bóc phong bì từ ngoài vào trong. Lớp ngoài cùng là IPv4, lớp trong cùng là các byte JPEG thật.
 
-### B2.2. Tính toán kích thước payload và quy ước mô hình
-Tham số dòng lệnh `--mtu-payload` (mặc định 1200 B, SOURCE: `sender.py`) quy định trần kích thước của **toàn bộ RTP payload** (bao gồm header mảnh và dữ liệu JPEG):
-- Mảnh đầu tiên: \(1200 - 8 - 4 = 1188\text{ byte JPEG}\).
-- Mảnh tiếp theo: \(1200 - 8 = 1192\text{ byte JPEG}\).
-- Kích thước packet RTP đầy: \(12\text{ (RTP)} + 1200\text{ (payload)} = 1212\text{ byte}\).
-- Kích thước IP datagram: \(20\text{ (IPv4)} + 8\text{ (UDP)} + 1212\text{ (RTP)} = 1240\text{ byte}\) (CALCULATED).
+### B2.3. Từng lớp làm gì
 
-Giá trị 1240 B nằm an toàn dưới ngưỡng MTU chuẩn của Ethernet (1500 B), tránh hiện tượng IP fragmentation ở tầng mạng.
+| Lớp | Độ dài | Ai đọc nó | Nó trả lời câu hỏi |
+|---|---|---|---|
+| IPv4 header | 20 B (không có option) | Router, card mạng | Gói này đi tới **máy** nào? |
+| UDP header | 8 B | Hệ điều hành máy nhận | Giao cho **chương trình** nào (cổng 5004)? |
+| RTP header | 12 B (SOURCE: `packet.py`, "fixed 12-byte header") | `receiver.py` | Dòng video nào (SSRC), gói thứ mấy (sequence), ảnh chụp lúc nào (timestamp), có phải gói cuối của ảnh (marker)? |
+| Header mảnh của nhóm | 8 B; mảnh đầu thêm 4 B (SOURCE: `payload.py`) | `payload.py`, `playout.py` | Mảnh này thuộc frame số mấy, bắt đầu ở byte thứ mấy của ảnh, ảnh dài tổng cộng bao nhiêu? |
+| Dữ liệu JPEG | phần còn lại | Bộ giải mã ảnh, AI | Nội dung ảnh |
 
-!!! note "Phân biệt hai quy ước payload"
-    - **Triển khai phần mềm Python:** 1200 B là giới hạn trần của toàn bộ RTP payload (header mảnh + JPEG), dẫn đến datagram IP là 1240 B.
-    - **Mô hình SimEvents:** 1200 B quy ước riêng cho dữ liệu ảnh, cộng 48 B overhead cố định (20 IPv4 + 8 UDP + 12 RTP + 8 fragment header), tạo ra packet 1248 B (SOURCE: `SIMEVENTS_V2_REPORT.md`, `dt = 8*(size + 48)/linkBitRate`).
+Header mảnh của nhóm **không phải** chuẩn RFC 2435 (chuẩn chính thức cho JPEG trên RTP). Nó là định dạng riêng (SOURCE: docstring đầu `payload.py`): `frame_id` 4 byte, `frag_offset` (vị trí byte) 3 byte, `flags` 1 byte; riêng mảnh đầu thêm 4 byte `total_length` (tổng chiều dài JPEG).
 
-<p class="key">Với --mtu-payload 1200, IP datagram đạt cực đại 1240 B (tránh IP fragmentation). Mảnh đầu mang 1188 B JPEG, các mảnh sau mang 1192 B JPEG.</p>
+### B2.4. Tính tay: một gói đầy dài bao nhiêu byte?
 
-**Tự luyện.** Nếu đặt `--mtu-payload 500` (như cấu hình `payload500` của CN-T5), mảnh đầu chứa được bao nhiêu byte JPEG, mảnh sau bao nhiêu, và IP datagram đầy dài bao nhiêu?
+Tham số `--mtu-payload` mặc định là 1200 (SOURCE: `sender.py`). Trong mã của nhóm, con số 1200 giới hạn **toàn bộ RTP payload**, tức gồm cả header mảnh lẫn dữ liệu JPEG.
+
+**Mảnh đầu tiên** của một ảnh có header mảnh 8 B và thêm 4 B chiều dài tổng, nên chỗ còn lại cho JPEG là:
+
+\[
+1200-8-4=1188\text{ byte JPEG}
+\]
+
+**Các mảnh sau** chỉ có header 8 B:
+
+\[
+1200-8=1192\text{ byte JPEG}
+\]
+
+Một gói RTP đầy (RTP header + payload) là:
+
+\[
+12+1200=1212\text{ byte}
+\]
+
+Thêm UDP và IPv4 để ra IP datagram:
+
+\[
+20+8+1212=1240\text{ byte}
+\]
+
+1240 B nhỏ hơn giới hạn 1500 B của Ethernet, nên gói không bị IP cắt thêm lần nữa (CALCULATED).
+
+#### Bài tập: bạn tự tính
+
+Nếu đặt `--mtu-payload 500` (như cấu hình `payload500` của CN-T5), mảnh đầu chứa được bao nhiêu byte JPEG, mảnh sau bao nhiêu, và IP datagram đầy dài bao nhiêu?
 
 ??? success "Xem đáp án"
     Mảnh đầu: \(500-8-4=488\) byte JPEG. Mảnh sau: \(500-8=492\) byte JPEG. IP datagram đầy: \(20+8+12+500=540\) byte (CALCULATED). Payload nhỏ nghĩa là một ảnh cần nhiều gói hơn — CN-T5 đo được 12,307 gói mỗi frame ở payload 500 B so với 5,232 gói ở 1200 B (MEASURED, `hw_tables.md`).
 
+!!! warning "Hai quy ước khác nhau — đừng trộn"
+    Mã Python của sản phẩm thật: 1200 B là giới hạn **cả RTP payload** (header mảnh + JPEG), nên IP datagram tối đa 1240 B.
+
+    Mô hình SimEvents ở Session 2 dùng quy ước khác: 1200 B là **dữ liệu ảnh** của một gói, cộng thêm 48 B overhead (20 IPv4 + 8 UDP + 12 RTP + 8 header mảnh), ra \(1200+48=1248\) B (SOURCE: `SIMEVENTS_V2_REPORT.md`, `dt = 8*(size + 48)/linkBitRate`). Bảng T5 trong `hw_tables.md` cũng ước lượng IP datagram bằng `mtu_payload + 48 B`. Cả hai cách đều hợp lệ trong bối cảnh của nó; chỉ đừng áp quy ước SimEvents vào mã Python.
+
+<p class="key">Một gói đầy của nhóm = 20 B IPv4 + 8 B UDP + 12 B RTP + 1200 B RTP payload = 1240 B. Trong 1200 B payload, mảnh đầu chứa 1188 B ảnh, mảnh sau chứa 1192 B ảnh.</p>
+
 ---
 
-## B3. Cấu trúc RTP Header và các trường định danh
+## B3. RTP header: từng trường để làm gì?
 
-RTP header cố định gồm 12 byte (96 bit), tổ chức theo các từ 32 bit:
+RTP header cố định dài 12 byte. Trước khi xem từng bit, ta cần hiểu **hai vấn đề** mà header này giải quyết.
 
-| Byte | Bit 0–1 | Bit 2 | Bit 3 | Bit 4–7 | Bit 8 | Bit 9–15 | Bit 16–31 |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 0–3 | **V** = 2 | P = 0 | X = 0 | CC = 0 | **M** (marker) | **PT** = 96 | **Sequence number** (16 bit) |
-| 4–7 | \multicolumn{7}{c|}{**Timestamp** (32 bit, clock 90 kHz)} |
-| 8–11 | \multicolumn{7}{c|}{**SSRC** (32 bit, định danh nguồn phát)} |
+### B3.1. Vấn đề thứ nhất: gói gửi riêng lẻ có thể đến lộn xộn
 
-### B3.1. Phân tích chức năng các trường
-- **Version (V = 2):** Phiên bản RTP theo RFC 3550. `parse_packet` ném ngoại lệ nếu \(V \neq 2\).
-- **Marker (M, 1 bit):** Đặt bằng 1 ở packet cuối cùng của một frame ảnh (`last = offset + len(chunk) == len(jpeg)`). Ở các packet trung gian, \(M = 0\).
-- **Payload Type (PT = 96, 7 bit):** Thuộc dải động 96–127 (RFC 3551). Bên nhận lọc bỏ mọi packet có \(PT \neq 96\) (SOURCE: `receiver.py`).
-- **Sequence Number (16 bit):** Khởi tạo ngẫu nhiên (`secrets.randbits(16)`), tăng 1 sau mỗi packet phát đi. Trường này dùng để phát hiện mất gói và đảo thứ tự.
-- **Timestamp (32 bit):** Mốc thời gian lấy mẫu media, biểu diễn theo tần số clock quy ước 90 kHz. Mọi packet sinh ra từ cùng một frame chia sẻ chung một timestamp.
-- **SSRC (32 bit):** Mã số ngẫu nhiên (`secrets.randbits(32)`) định danh duy nhất phiên phát RTP. Bên nhận khóa luồng dựa trên cặp `(IP nguồn, SSRC)`.
+Mỗi gói UDP đi một mình. Hai gói gửi cách nhau vài micro-giây có thể gặp hàng đợi khác nhau ở switch hoặc router, nên gói gửi sau đôi khi đến trước. Gói cũng có thể mất hẳn.
 
-### B3.2. Xử lý quay vòng (Wrap-around) và bước nhảy Timestamp
-Trường Sequence number 16 bit quay vòng modulo \(2^{16} = 65536\). Lớp `SourceStats` trong `cn/rtp/rtp/rxstats.py` theo dõi chu kỳ quay vòng qua biến `cycles`:
-\[
-\text{Extended Highest Sequence} = \text{cycles} + \text{max\_seq}
-\]
-Nhờ đó, bộ đếm tổng số packet kỳ vọng \(N_{\text{expected}} = \text{ext\_high\_seq} - \text{base\_seq} + 1\) tăng đơn điệu tuyến tính mà không bị lỗi khi sequence vượt qua 65535.
+Nếu gói không có số thứ tự, máy nhận thấy gói đến theo thứ tự A, C, B sẽ không biết đó là "đảo thứ tự" hay "mất một gói rồi có gói lạ". Giải pháp: đánh số liên tiếp cho từng gói. Đó là **sequence number (số thứ tự gói)**.
 
-Đồng hồ timestamp 90 kHz chuyển đổi mốc chụp ảnh monotonic (nanosecond) của Pi sang tick:
+### B3.2. Vấn đề thứ hai: "gói này là gói nào" khác với "ảnh này chụp lúc nào"
+
+Sequence trả lời câu hỏi *gói thứ mấy*. Nhưng máy nhận còn cần biết *ảnh trong gói được chụp lúc nào*, để phát các ảnh cách nhau đúng nhịp camera.
+
+Hai câu hỏi này khác nhau. Một ảnh cắt thành 6 gói thì 6 gói có 6 số thứ tự khác nhau, nhưng **cùng một** thời điểm chụp. Vì vậy RTP có trường thứ hai: **timestamp (mốc thời gian media)**.
+
+!!! tip "Hình dung"
+    Trong một xấp ảnh in gửi qua bưu điện, mỗi phong bì có **số phiếu gửi** riêng (sequence), nhưng mặt sau mỗi tấm ảnh in **ngày giờ chụp** (timestamp). Sáu mảnh của cùng một tấm ảnh có sáu số phiếu khác nhau nhưng cùng một ngày giờ chụp.
+
+### B3.3. Sơ đồ 12 byte
+
+RTP header được vẽ theo hàng 32 bit (4 byte mỗi hàng):
+
+<table>
+<tr><th>Bit</th><th colspan="2">0–1</th><th>2</th><th>3</th><th>4–7</th><th>8</th><th>9–15</th><th>16–31</th></tr>
+<tr><td>Byte 0–3</td><td colspan="2"><b>V</b> = 2</td><td>P</td><td>X</td><td>CC</td><td><b>M</b> (marker)</td><td><b>PT</b> = 96</td><td><b>Sequence number</b> (16 bit)</td></tr>
+<tr><td>Byte 4–7</td><td colspan="8"><b>Timestamp</b> (32 bit, đơn vị tick 90 kHz)</td></tr>
+<tr><td>Byte 8–11</td><td colspan="8"><b>SSRC</b> (32 bit, mã nguồn phát)</td></tr>
+</table>
+
+Đọc từng ô:
+
+- **V (version)** = 2: phiên bản RTP. `parse_packet` từ chối gói có version khác 2 (SOURCE: `packet.py`).
+- **P (padding)**, **X (extension)**, **CC (số CSRC)**: nhóm không dùng, đều bằng 0.
+- **M (marker)**: 1 bit, nhóm đặt bằng 1 ở **gói cuối cùng của một ảnh**.
+- **PT (payload type)** = 96: 7 bit, nói payload thuộc định dạng gì.
+- **Sequence number**: 16 bit, tăng 1 sau mỗi gói.
+- **Timestamp**: 32 bit, thời điểm chụp ảnh tính theo đồng hồ media 90 kHz.
+- **SSRC (Synchronization Source)**: 32 bit, "chứng minh thư" của dòng video.
+
+### B3.4. Sequence number và hiện tượng quay vòng
+
+16 bit biểu diễn được \(2^{16}=65536\) giá trị, từ 0 đến 65535. Sau 65535, số tiếp theo **quay về 0**. Đây gọi là **wrap-around (quay vòng)**.
+
+Ví dụ minh họa: sender bắt đầu ở sequence 65533 và gửi một ảnh 6 gói:
+
+| Gói thứ | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| Sequence | 65533 | 65534 | 65535 | **0** | **1** | **2** |
+
+Gói số 4 mang sequence 0 nhưng **không phải** "gói đầu tiên của phiên". Máy nhận phải hiểu 0 đến *sau* 65535. Trong `rxstats.py`, mỗi lần sequence quay vòng, biến `cycles` cộng thêm 65536 (SOURCE: `_update_seq`). Nhờ đó máy nhận có **extended highest sequence (số thứ tự mở rộng)**: \(65536+2=65538\), một con số không bao giờ quay vòng, dùng để đếm số gói đã kỳ vọng.
+
+Trong mã sender, quay vòng chỉ là một phép AND với `0xffff`:
+
+```python
+packets.append(RTPPacket(payload, (seq_start + len(packets)) & 0xffff,
+```
+
+(SOURCE: `payload.py`, `fragment_jpeg`). Sequence bắt đầu bằng một số ngẫu nhiên 16 bit (`secrets.randbits(16)` trong `sender.py`), theo khuyến nghị RFC 3550, nên quay vòng có thể xảy ra bất cứ lúc nào trong một phiên.
+
+### B3.5. Timestamp 90 kHz
+
+**Đồng hồ 90 kHz** là một quy ước của RTP cho video: một giây được chia thành 90 000 "tick". Đây **không phải** tần số CPU hay tần số camera, chỉ là thước đo thời gian chung giữa hai đầu.
+
+Sender đổi thời điểm chụp (nano-giây, đồng hồ monotonic của Pi) sang tick:
+
 ```python
     def timestamp(self, capture_ns):
         # RFC 3550 §5.1: media sampling instant, in 90 kHz units, random offset.
         return (capture_ns * CLOCK_RATE // 1_000_000_000 + self.timestamp_offset) & 0xffffffff
 ```
-*(SOURCE: `cn/rtp/rtp/sender.py`)*
 
-Ở tốc độ camera 15 FPS danh định, khoảng cách timestamp giữa hai frame liên tiếp là:
+(SOURCE: `sender.py`, `Sender.timestamp`; `CLOCK_RATE = 90_000` trong `playout.py`.) Dòng này làm ba việc: nhân số nano-giây với 90 000 rồi chia \(10^9\) để ra tick; cộng một **offset ngẫu nhiên** 32 bit (để timestamp không lộ giờ hệ thống); rồi giữ lại 32 bit thấp (quay vòng sau \(2^{32}\) tick).
+
+**Bước timestamp giữa hai frame** ở 15 FPS (CALCULATED):
+
 \[
-\Delta TS = \frac{90000\text{ tick/s}}{15\text{ frame/s}} = 6000\text{ tick}
+\Delta TS=\frac{90\,000\ \text{tick/s}}{15\ \text{frame/s}}=6000\ \text{tick/frame}
 \]
-Ở 30 FPS, khoảng cách là \(\Delta TS = 3000\text{ tick}\).
 
-<p class="key">Sequence number (16 bit) nhận diện packet riêng lẻ và phục vụ tính toán mất gói; Timestamp 90 kHz (32 bit) nhận diện thời điểm thu nhận frame và phục vụ đồng bộ playout.</p>
+Đổi ngược lại ra thời gian: \(6000/90\,000=0{,}06667\text{ s}=66{,}67\text{ ms}\) — đúng chu kỳ khung hình. Ở 30 FPS, bước là \(90\,000/30=3000\) tick.
 
-**Tự luyện**
+Thực tế bước không luôn đúng 6000, vì thời điểm chụp thật của camera dao động vài phần nghìn giây. Hình B4 bên dưới cho thấy điều đó trên dữ liệu đo.
+
+### B3.6. SSRC, marker và PT 96
+
+**SSRC** là một số ngẫu nhiên 32 bit mà sender chọn khi khởi động (`secrets.randbits(32)`, SOURCE: `sender.py`). Mọi gói của cùng một dòng video mang cùng SSRC. Máy nhận "khóa" vào nguồn đầu tiên nó thấy: `_accept_peer` chỉ nhận gói có cùng địa chỉ gửi và cùng SSRC với gói đầu (SOURCE: `receiver.py`). Máy nhận nhận diện một ảnh bằng cặp **(SSRC, timestamp)** (SOURCE: `FrameReassembler` và `PlayoutBuffer` dùng `key = packet.ssrc, packet.timestamp`).
+
+**Marker** bằng 1 ở gói cuối của ảnh. Trong `fragment_jpeg`, cờ này là biến `last`, đúng khi mảnh vừa cắt chạm tới byte cuối của JPEG. Marker cho máy nhận biết *ảnh kết thúc ở byte nào*, nhưng — rất quan trọng — **nhận được gói marker không có nghĩa là đã đủ ảnh**. Phần B5 sẽ cho ví dụ.
+
+**PT = 96**: RTP dành dải 96–127 cho các định dạng "động", do hai bên tự thỏa thuận (theo RFC 3551). Vì header mảnh của nhóm là định dạng riêng, dùng 96 là hợp lý. Máy nhận bỏ qua mọi gói có PT khác 96 (SOURCE: `receiver.py`, `if packet.payload_type != 96 ... continue`).
+
+### B3.7. Tính tay: byte thứ hai của header
+
+Byte thứ hai chứa marker (bit cao nhất) và PT (7 bit thấp). Mã: `second = (int(packet.marker) << 7) | packet.payload_type` (SOURCE: `packet.py`).
+
+- Gói thường, marker = 0: \(96 = 0110\,0000_2 = \texttt{0x60}\).
+- Gói cuối, marker = 1: \(1000\,0000_2 + 0110\,0000_2 = 1110\,0000_2 = \texttt{0xE0}\) (CALCULATED).
+
+Byte đầu tiên luôn là \(2\ll 6 = 1000\,0000_2=\texttt{0x80}\) vì V = 2 và P, X, CC đều bằng 0.
+
+Nếu mở một bản bắt gói bằng Wireshark, bạn sẽ thấy hai byte đầu là `80 60` ở gói thường và `80 E0` ở gói cuối của mỗi ảnh.
 
 ??? success "Bài tập: Sequence tiếp theo là bao nhiêu?"
     Ảnh thứ nhất dùng sequence 65530 đến 65535 (6 gói). Ảnh thứ hai cũng 6 gói. Sequence của gói đầu và gói cuối ảnh thứ hai là bao nhiêu? Timestamp ảnh thứ hai so với ảnh thứ nhất (15 FPS, danh định)?
 
     **Đáp án.** Sau khi gửi xong, `sender.py` đặt `self.seq = (packets[-1].seq + 1) & 0xffff` \(=(65535+1)\,\&\,\texttt{0xffff}=0\). Ảnh thứ hai dùng sequence 0, 1, 2, 3, 4, 5. Timestamp ảnh thứ hai lớn hơn ảnh thứ nhất khoảng 6000 tick (CALCULATED, danh định).
 
+<p class="key">Sequence đánh số từng gói (16 bit, quay vòng sau 65535); timestamp ghi thời điểm chụp ảnh theo tick 90 kHz (mọi gói của một ảnh dùng chung); SSRC định danh dòng video; marker đánh dấu gói cuối của ảnh; PT 96 nói payload là định dạng riêng của nhóm.</p>
+
 ---
 
-## B4. Phân mảnh Frame thành Packet: Dữ liệu thực nghiệm CN-T3
+## B4. Frame và packet: cắt một ảnh JPEG thành nhiều gói
 
-### B4.1. Cơ chế phân mảnh trong `payload.py`
-Khi kích thước frame JPEG vượt quá dung lượng chứa của một packet, hàm `fragment_jpeg` thực hiện chia nhỏ mảng byte:
+### B4.1. Tại sao phải cắt?
 
-```python
-    while offset < len(jpeg) or not packets:
-        first = offset == 0
-        room = mtu_payload - PAYLOAD_HEADER_SIZE - (4 if first else 0)
-        chunk = jpeg[offset:offset + room]
-        payload = encode_fragment(frame_id, offset, chunk, first=first,
-                                  total_length=len(jpeg) if first else None)
-        last = offset + len(chunk) == len(jpeg)
-        packets.append(RTPPacket(payload, (seq_start + len(packets)) & 0xffff,
-                                 rtp_ts & 0xffffffff, ssrc & 0xffffffff,
-                                 payload_type, last))
-        offset += len(chunk)
-```
-*(SOURCE: `cn/rtp/rtp/payload.py`)*
+Một ảnh của nhóm dài khoảng 6 nghìn byte, trong khi một gói chỉ nên mang tối đa 1200 byte payload để IP datagram (1240 B) không vượt 1500 B. Nếu vượt, tầng IP sẽ tự cắt gói thành nhiều **IP fragment**, và mất bất kỳ fragment nào cũng làm hỏng cả datagram — CN-T5 đo đúng hiện tượng đó ở payload 3000 B. Vậy ứng dụng tự cắt ảnh trước, mỗi mảnh vừa một gói. Việc này gọi là **packetization (đóng gói / chia mảnh)**.
 
-### B4.2. Khảo sát Frame 0 (Bài đo T3/loss5/run1)
-Dữ liệu trích xuất từ Frame 0 trong lần chạy thực nghiệm `T3/loss5/run1` (capture timestamp 1546568660) cho thấy một frame JPEG kích thước 6100 byte được chia thành 6 packet liên tiếp:
+### B4.2. Ví dụ thật: frame 0 của một lần đo CN-T3
+
+Thay vì bịa số, ta dùng đúng một frame đo thật. Hình dưới (panel trái) là frame 0 của lần chạy `T3/loss5/run1`.
+
+![Metadata RTP từ bài đo: sáu mảnh của một frame và histogram bước timestamp](../assets/fig/plots/01_rtp_metadata.png)
+
+!!! example "Cách đọc hình"
+    **Panel trái** — tiêu đề "Frame 0 · T3/loss5/run1 · timestamp 1546568660". Trục ngang là **sequence number** của từng gói: 31318 đến 31323. Trục dọc là **kích thước gói** tính bằng byte (gói RTP, tức RTP header + payload). Năm cột xanh cao 1212 B, cột cam cuối cùng 164 B, có ghi chú "marker = 1".
+
+    **Panel phải** — tiêu đề "Ethernet sạch · T2/run1 · 967 bước". Trục ngang là **bước timestamp** giữa hai frame liên tiếp (tick 90 kHz), trục dọc là số lần. Gần như toàn bộ cột dồn tại 6000, đúng đường đứt "mốc 15 fps: 6000 tick"; một cột nhỏ hơn ngay bên phải và vài giá trị lẻ tẻ quanh đó.
+
+    **Ý chính:** một ảnh = 6 gói liên tiếp, chung timestamp, chỉ gói cuối có marker; và nhịp timestamp bám rất sát 6000 tick nhưng không tuyệt đối đều. (MEASURED)
+
+Từ panel trái, ta suy ra được chiều dài ảnh JPEG (CALCULATED):
+
+- Gói 1212 B = 12 B RTP header + 1200 B payload. Gói đầu chứa 1188 B ảnh, bốn gói sau mỗi gói 1192 B ảnh.
+- Gói cuối 164 B = 12 B RTP header + 152 B payload = 12 + 8 B header mảnh + **144 B ảnh**.
+
+\[
+1188+4\times1192+144=1188+4768+144=6100\text{ byte JPEG}
+\]
+
+### B4.3. Bảng đầy đủ sáu gói
+
+Đây là bảng mà bạn nên tự vẽ lại được trong buổi bảo vệ. Sequence, timestamp, kích thước và marker lấy từ hình; offset và byte JPEG là CALCULATED theo quy tắc của `fragment_jpeg`.
+
+| Gói | Sequence | RTP timestamp | `frame_id` | `frag_offset` | `flags` (FIRST) | `total_length` | Byte JPEG | Gói RTP (B) | Marker |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 31318 | 1546568660 | 0 | 0 | 1 | 6100 | 1188 | 1212 | 0 |
+| 2 | 31319 | 1546568660 | 0 | 1188 | 0 | — | 1192 | 1212 | 0 |
+| 3 | 31320 | 1546568660 | 0 | 2380 | 0 | — | 1192 | 1212 | 0 |
+| 4 | 31321 | 1546568660 | 0 | 3572 | 0 | — | 1192 | 1212 | 0 |
+| 5 | 31322 | 1546568660 | 0 | 4764 | 0 | — | 1192 | 1212 | 0 |
+| 6 | 31323 | 1546568660 | 0 | 5956 | 0 | — | 144 | 164 | **1** |
+
+Ba điều cần thấy trong bảng:
+
+1. **Sequence khác nhau, timestamp giống nhau.** Sequence nhận diện *gói*; timestamp nhận diện *thời điểm chụp ảnh*.
+2. **`frag_offset` cộng dồn.** Mỗi offset bằng offset trước cộng số byte JPEG của mảnh trước: \(0\to1188\to2380\to3572\to4764\to5956\). Máy nhận dùng offset để đặt mảnh vào đúng chỗ, kể cả khi mảnh đến lộn xộn.
+3. **Chỉ mảnh đầu mang `total_length`, chỉ mảnh cuối mang marker.** Hai thông tin này cùng nhau cho biết ảnh dài bao nhiêu và kết thúc ở đâu.
 
 <svg viewBox="0 0 780 150" width="100%" style="max-width:780px;display:block;margin:1rem auto;" role="img" aria-label="Một ảnh JPEG 6100 byte được cắt thành sáu mảnh">
   <rect x="10" y="15" width="760" height="36" rx="6" fill="rgba(245,158,11,0.15)" stroke="currentColor"/>
@@ -206,48 +381,62 @@ Dữ liệu trích xuất từ Frame 0 trong lần chạy thực nghiệm `T3/lo
   <text x="742" y="117" text-anchor="middle" fill="currentColor" font-size="10">144 B M=1</text>
   <line x1="390" y1="51" x2="390" y2="80" stroke="currentColor" stroke-dasharray="4 3"/>
   <text x="400" y="72" fill="currentColor" font-size="11">fragment_jpeg(mtu_payload=1200)</text>
-  <text x="390" y="145" text-anchor="middle" fill="currentColor" font-size="11">Mọi mảnh: chung timestamp 1546568660; seq tăng liên tục; chỉ mảnh cuối có marker = 1</text>
+  <text x="390" y="145" text-anchor="middle" fill="currentColor" font-size="11">Mọi mảnh: cùng timestamp, cùng frame_id; sequence tăng 1; chỉ mảnh cuối có marker</text>
 </svg>
 
-| Packet | Seq | Timestamp | `frame_id` | `frag_offset` | `flags` (FIRST) | `total_length` | Payload JPEG (B) | Packet RTP (B) | Marker |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 31318 | 1546568660 | 0 | 0 | 1 | 6100 | 1188 | 1212 | 0 |
-| 2 | 31319 | 1546568660 | 0 | 1188 | 0 | — | 1192 | 1212 | 0 |
-| 3 | 31320 | 1546568660 | 0 | 2380 | 0 | — | 1192 | 1212 | 0 |
-| 4 | 31321 | 1546568660 | 0 | 3572 | 0 | — | 1192 | 1212 | 0 |
-| 5 | 31322 | 1546568660 | 0 | 4764 | 0 | — | 1192 | 1212 | 0 |
-| 6 | 31323 | 1546568660 | 0 | 5956 | 0 | — | 144 | 164 | **1** |
+### B4.4. Mã thật làm việc này
 
-Tổng dung lượng JPEG khôi phục:
-\[
-1188 + (4 \times 1192) + 144 = 1188 + 4768 + 144 = 6100\text{ byte}
-\]
-Packet thứ 6 có kích thước wire-level là: \(12\text{ (RTP)} + 8\text{ (fragment header)} + 144\text{ (JPEG)} = 164\text{ byte}\) (CALCULATED).
+```python
+    while offset < len(jpeg) or not packets:
+        first = offset == 0
+        room = mtu_payload - PAYLOAD_HEADER_SIZE - (4 if first else 0)
+        chunk = jpeg[offset:offset + room]
+        payload = encode_fragment(frame_id, offset, chunk, first=first,
+                                  total_length=len(jpeg) if first else None)
+        last = offset + len(chunk) == len(jpeg)
+        packets.append(RTPPacket(payload, (seq_start + len(packets)) & 0xffff,
+                                 rtp_ts & 0xffffffff, ssrc & 0xffffffff,
+                                 payload_type, last))
+        offset += len(chunk)
+```
 
-![Metadata RTP từ bài đo: sáu mảnh của một frame và histogram bước timestamp](../assets/fig/plots/01_rtp_metadata.png)
+(SOURCE: `cn/rtp/rtp/payload.py`, hàm `fragment_jpeg`.) Đọc bằng lời: lặp cho tới khi cắt hết ảnh. Mỗi vòng, tính chỗ trống `room` (1200 − 8, trừ thêm 4 nếu là mảnh đầu), cắt đúng chừng ấy byte, dán header mảnh, rồi tạo một gói RTP với sequence tăng dần, **cùng một `rtp_ts`**, và marker `last` chỉ đúng khi mảnh này chạm byte cuối.
 
-!!! example "Cách đọc hình: Phân mảnh RTP và chu kỳ timestamp"
-    - **Panel trái (Frame 0 · T3/loss5/run1):** Trục hoành là số thứ tự packet (`sequence number` từ 31318 đến 31323), trục tung là kích thước packet RTP (byte). 5 packet đầu đạt kích thước cực đại 1212 B; packet thứ 6 chứa phần dư cuối cùng 164 B và bật cờ `marker = 1`.
-    - **Panel phải (Ethernet sạch · T2/run1):** Histogram phân bố khoảng cách timestamp giữa 967 frame liên tiếp. Phổ dồn đỉnh chính xác tại giá trị danh định 6000 tick (\(15\text{ FPS} \times 6000 = 90000\text{ Hz}\)), với độ lệch chuẩn nhỏ do jitter phần cứng của bộ hẹn giờ camera. (MEASURED)
+### B4.5. Bài tập có lời giải và bài tập tự làm
 
-<p class="key">Một frame JPEG 6100 B được phân rã thành 5 packet 1212 B và 1 packet 164 B; các packet chung timestamp 90 kHz, liên tục sequence, tích lũy offset và chỉ packet cuối có marker = 1.</p>
+**Bài giải mẫu.** Một ảnh dài đúng 6000 B, payload 1200 B. Cần bao nhiêu gói?
 
-**Tự luyện**
+- Năm gói đầu chứa: \(1188+4\times1192=5956\) B.
+- Còn thiếu: \(6000-5956=44\) B, nên cần gói thứ sáu chứa 44 B ảnh.
+- Đáp số: **6 gói** (CALCULATED). Gói cuối dài \(12+8+44=64\) B.
+
+Chú ý: nếu tính ngây thơ \(6000/1200=5\) gói thì sai, vì quên rằng mỗi payload 1200 B còn phải chứa header mảnh 8 B (và 4 B chiều dài ở mảnh đầu).
 
 **Bạn tự làm.** Ảnh dài 2400 B. Cần mấy gói? Gói cuối dài bao nhiêu byte (gói RTP)?
 
 ??? success "Xem đáp án"
     Gói đầu chứa 1188 B, còn \(2400-1188=1212\) B. Gói hai chứa 1192 B, còn \(1212-1192=20\) B. Gói ba chứa 20 B. Vậy **3 gói**. Gói cuối dài \(12+8+20=40\) B (CALCULATED). Ảnh 2400 B nghe như "vừa đúng 2 × 1200" nhưng thực ra cần 3 gói.
 
+??? note "Đào sâu: ảnh cũ trong bài trước ghi '6000 B → 5 packet' có sai không?"
+    Con số "6000 B và 1200 B dữ liệu ảnh → 5 packet" là một **mô hình đơn giản** coi 1200 B là toàn bộ dữ liệu ảnh mỗi gói (giống quy ước SimEvents). Theo mã Python hiện tại, 6000 B cần 6 gói như tính ở trên. Khi bảo vệ, nói rõ bạn đang dùng quy ước nào.
+
+<p class="key">Một ảnh 6100 B ở CN-T3 được cắt thành 6 gói: 5 gói 1212 B và 1 gói 164 B; sáu gói có sequence liên tiếp, chung một timestamp, offset cộng dồn, chỉ gói cuối mang marker.</p>
+
 ---
 
-## B5. Tái cấu trúc Frame tại Receiver và điều kiện hoàn chỉnh
+## B5. Máy nhận ghép ảnh lại như thế nào?
 
-### B5.1. Thuật toán kiểm tra tính liên tục byte
-Lớp `FrameReassembler` trong `cn/rtp/rtp/payload.py` nhóm các fragment theo khóa `(SSRC, timestamp)`. Một frame chỉ được xác nhận hoàn chỉnh khi thỏa mãn đồng thời 3 điều kiện:
-1. **Biết kích thước danh định:** Đã tiếp nhận fragment đầu tiên (`frag_offset = 0`), giải mã được trường `total_length`.
-2. **Biết biên kết thúc:** Đã tiếp nhận fragment mang cờ `marker = 1`, thỏa mãn \(\text{frag\_offset} + \text{len(chunk)} == \text{total\_length}\).
-3. **Tính liên tục không có khoảng trống:** Sắp xếp các fragment theo `frag_offset`, kiểm tra khoảng byte tiếp giáp: mỗi fragment \(k\) phải bắt đầu chính xác tại byte kết thúc của fragment \(k-1\).
+### B5.1. Vấn đề
+
+Máy nhận thấy các gói đến lần lượt, có khi thiếu, có khi lộn thứ tự, có khi trùng. Nó phải trả lời một câu hỏi duy nhất cho mỗi ảnh: **"Tôi đã có đủ mọi byte từ byte 0 đến byte cuối chưa?"** Chỉ khi câu trả lời là "có" thì ảnh mới giải mã được.
+
+### B5.2. Quy tắc ghép của nhóm, bằng lời
+
+Lớp `FrameReassembler` trong `payload.py` gom các mảnh theo khóa (SSRC, timestamp) và coi một ảnh là **hoàn chỉnh** khi đủ cả ba điều kiện (SOURCE: hàm `add`):
+
+1. Đã biết **chiều dài tổng** — tức đã nhận mảnh đầu (mảnh có `total_length`).
+2. Đã biết **điểm kết thúc** — tức đã nhận mảnh có marker, và `offset + độ dài` của nó bằng chiều dài tổng.
+3. Các mảnh **nối liền** từ byte 0 tới byte cuối, không có lỗ hổng.
 
 ```python
         total = frame.total_length
@@ -262,89 +451,171 @@ Lớp `FrameReassembler` trong `cn/rtp/rtp/payload.py` nhóm các fragment theo 
         if pos != total:
             return None
 ```
-*(SOURCE: `cn/rtp/rtp/payload.py`)*
 
-### B5.2. Các kịch bản dị thường trên đường truyền
-1. **Sequence wrap-around:** Quá trình reassembly hoàn toàn độc lập với sequence number; các fragment được xếp vị trí thuần túy theo `frag_offset`. Hiện tượng quay vòng sequence không ảnh hưởng tới việc ghép ảnh.
-2. **Packet đến đảo thứ tự:** Nếu fragment đến theo thứ tự `P1, P2, P4, P3, P5, P6`, tại thời điểm P4 đến xuất hiện khoảng trống từ byte 2380 đến 3572 nên `add` trả về `None`. Khi P3 đến, khoảng trống được lấp đầy; khi P6 đến, frame hoàn tất hợp lệ.
-3. **Mất packet giữa:** Thiếu P3, vòng lặp phát hiện lỗi hổng offset tại byte 2380. Frame không bao giờ đạt trạng thái hoàn chỉnh và bị hủy khi timeout.
-4. **Nhận được marker nhưng thiếu packet đầu:** Mất P1 khiến receiver không thể biết `total_length` và thiếu đoạn byte từ 0 đến 1188. Việc nhận được packet marker (\(M = 1\)) **không đồng nghĩa** với việc frame đã hoàn chỉnh.
+(SOURCE: `payload.py`, `FrameReassembler.add`.) Dòng đầu kiểm điều kiện 1 và 2. Vòng lặp sắp các mảnh theo offset và kiểm điều kiện 3: mỗi mảnh phải bắt đầu đúng chỗ mảnh trước kết thúc.
 
-<div class="widget" data-widget="fragments" data-count="6" data-title="Khảo sát tái cấu trúc frame khi thiếu mảnh"></div>
+### B5.3. Năm tình huống — luyện từng cái
 
-*Dự đoán trước khi thử:* Nếu tắt packet P1 (mang `total_length`), frame có thể hoàn thành không? Sau khi thử: Dù nhận đủ 5 packet còn lại kể cả packet marker, cờ hoàn chỉnh vẫn bằng 0 do thiếu mốc kích thước gốc và khoảng byte đầu tiên.
+Dùng lại ảnh 6 mảnh ở B4 (gọi tắt P1…P6, offset 0, 1188, 2380, 3572, 4764, 5956).
 
-<p class="key">Tái cấu trúc frame dựa trên kiểm tra offset liên tục và biên total_length; nhận được cờ marker không bảo đảm hoàn chỉnh nếu còn khoảng trống byte phía trước.</p>
+**(a) Sequence quay vòng giữa ảnh.** Giả sử sáu gói mang sequence 65534, 65535, 0, 1, 2, 3. Việc ghép ảnh **không bị ảnh hưởng**, vì ghép dựa trên *offset byte* chứ không dựa trên sequence. Sequence quay vòng chỉ cần xử lý ở phần thống kê mất gói (`rxstats.py`, biến `cycles`).
+
+**(b) Gói đến lộn thứ tự.** Thứ tự đến: P1, P2, P4, P3, P5, P6. Khi P4 đến, có lỗ hổng từ byte 2380 tới 3572, nên `add` trả `None` (chưa xong). Khi P3 đến, lỗ được lấp. Khi P6 đến, đủ cả ba điều kiện → ảnh hoàn chỉnh. **Kết luận:** đảo thứ tự không làm hỏng ảnh, miễn đủ mảnh trước hạn.
+
+**(c) Mất một gói ở giữa.** P3 mất hẳn. P6 (marker) vẫn đến, chiều dài tổng 6100 đã biết từ P1, điểm kết thúc 6100 đã biết từ P6 — nhưng vòng lặp phát hiện lỗ 2380…3572. Ảnh **không bao giờ** hoàn chỉnh. Hàm `missing` sẽ trả về khoảng byte thiếu `(2380, 3572)`.
+
+**(d) Có marker nhưng thiếu mảnh đầu.** P1 mất, P2…P6 đến đủ. Máy nhận biết điểm kết thúc (5956 + 144 = 6100) nhưng **không biết chiều dài tổng** (chỉ P1 mang `total_length`), và vòng lặp không thấy mảnh bắt đầu ở byte 0. Ảnh không hoàn chỉnh. Đây là ví dụ rõ nhất cho câu: **nhận được gói cuối ≠ nhận đủ ảnh.**
+
+**(e) Đủ mảnh nhưng quá muộn.** Cả sáu mảnh đến, nhưng mảnh cuối đến sau hạn phát của ảnh. Ảnh *hoàn chỉnh về byte* nhưng *muộn về thời gian*; `playout.py` gắn nhãn `late` và **không** giao cho AI. Phần B8 giải thích hạn phát.
+
+| Tình huống | Đủ byte? | Đúng hạn? | Trạng thái cuối (`frames_rx.csv`) | Đến AI? |
+|---|---|---|---|---|
+| (a) quay vòng sequence | Có | Có | `ok` | Có |
+| (b) lộn thứ tự | Có | Có | `ok` | Có |
+| (c) mất gói giữa | Không | — | `lost` | Không |
+| (d) marker có, thiếu mảnh đầu | Không | — | `lost` | Không |
+| (e) đủ nhưng muộn | Có | Không | `late` | Không |
+
+Hãy tự thử với widget dưới đây. **Câu hỏi trước khi thử:** nếu bạn tắt chỉ P6 (gói có marker), ảnh có hoàn chỉnh không? Còn nếu bật P6 nhưng tắt P1?
+
+<div class="widget" data-widget="fragments" data-count="6" data-title="Tắt một mảnh và quan sát trạng thái ghép"></div>
+
+Sau khi thử, bạn sẽ thấy: chỉ cần **một** mảnh bất kỳ tắt là ảnh không hoàn chỉnh, bất kể mảnh đó là đầu, giữa hay cuối. Widget đếm đủ 6/6 mảnh mới bật cờ hoàn chỉnh; mã Python thật còn chặt hơn, vì nó kiểm tra *vị trí byte* chứ không chỉ *số lượng*.
+
+??? note "Đào sâu: gói trùng thì sao?"
+    Nếu cùng một mảnh đến hai lần với nội dung giống hệt, `FrameReassembler` chỉ ghi đè lên chính nó, không đếm thêm. Nếu hai mảnh cùng offset mà nội dung khác nhau, hàm ném `ValueError("conflicting duplicate fragment")`, và `receiver.py` đếm gói đó vào biến `malformed`. Docstring của `playout.py` cũng ghi: "Duplicate packets do not add frames." (SOURCE.) Đây là khác biệt với bộ đếm mảnh đơn giản trong mô hình SimEvents ở Session 2, vốn chỉ đếm số mảnh và không tự phát hiện trùng.
+
+<p class="key">Ảnh chỉ hoàn chỉnh khi có mảnh đầu (biết chiều dài), có mảnh marker (biết điểm cuối) và mọi mảnh nối liền theo offset. Lộn thứ tự thì không sao; thiếu một mảnh bất kỳ thì hỏng; đủ mà muộn thì cũng không được dùng.</p>
 
 ---
 
-## B6. Phân tích độ nhạy mất Frame: P_ loss = 1 - (1-p)^N
+## B6. Vì sao mất ít gói lại mất nhiều ảnh?
 
-### B6.1. Mô hình toán học mất mát độc lập
-Xét một frame bao gồm \(N\) packet. Giả sử kênh truyền có xác suất mất packet độc lập là \(p\) (Bernoulli loss). Để tái cấu trúc thành công frame ảnh JPEG, điều kiện bắt buộc là **toàn bộ \(N\) packet phải đến đích an toàn**:
+### B6.1. Vấn đề
+
+Giả sử mạng mất 5% số gói. Nghe có vẻ nhỏ. Nhưng mỗi ảnh cần khoảng 5 gói, và thiếu *bất kỳ* gói nào là hỏng cả ảnh. Vậy tỉ lệ ảnh hỏng sẽ lớn hơn 5% rất nhiều. Bao nhiêu?
+
+### B6.2. Ví dụ đơn giản
+
+Một ảnh 2 gói, mỗi gói có xác suất đến nơi 0,95. Ảnh thành công khi **cả hai** gói đến:
+
 \[
-P_{\text{success}} = (1 - p)^N
+0{,}95\times0{,}95=0{,}9025
 \]
-Xác suất mất frame \(P_{\text{loss}}\) tương ứng là:
+
+Tức 90,25% ảnh thành công, 9,75% ảnh hỏng — gần gấp đôi tỉ lệ mất gói.
+
+### B6.3. Công thức
+
+Nếu ảnh cần \(N\) gói, mọi gói đều bắt buộc, và mỗi gói mất **độc lập** với xác suất \(p\):
+
 \[
-P_{\text{loss}} = 1 - P_{\text{success}} = 1 - (1 - p)^N
+P_{\mathrm{success}}=(1-p)^N,\qquad P_{\mathrm{loss}}=1-(1-p)^N
 \]
-Do \(N > 1\), tỷ lệ mất frame luôn tăng phi tuyến và lớn hơn đáng kể so với tỷ lệ mất packet đơn lẻ.
 
-### B6.2. Kiểm chứng với số liệu thực nghiệm CN-T3
-Tại cấu hình `loss5` của chiến dịch CN-T3 (netem cấu hình 5% packet loss), các thông số đo được trên phần cứng là: tỷ lệ mất packet thực tế \(p = 0{,}052\) (5,2%), số packet trung bình trên mỗi frame \(\bar{N} = 5{,}106\) (MEASURED, `hw_tables.md`).
+- \(p\): xác suất mất một gói (không đơn vị, từ 0 đến 1).
+- \(N\): số gói của một ảnh.
+- \((1-p)\): xác suất một gói đến nơi. Lũy thừa \(N\) vì cần \(N\) sự kiện độc lập cùng xảy ra.
 
-Các bước tính toán xác suất mất frame lý thuyết:
-1. Xác suất truyền thành công 1 packet: \(1 - p = 1 - 0{,}052 = 0{,}948\).
-2. Lũy thừa bậc \(\bar{N}\):
-   \[
-   \ln(0{,}948) \approx -0{,}05340 \implies \bar{N} \cdot \ln(0{,}948) = 5{,}106 \times (-0{,}05340) \approx -0{,}27266
-   \]
-   \[
-   P_{\text{success}} = e^{-0{,}27266} \approx 0{,}76135\quad (76{,}14\%)
-   \]
-3. Xác suất mất frame:
-   \[
-   P_{\text{loss}} = 1 - 0{,}76135 = 0{,}23865 \approx 23{,}9\%\quad (\text{CALCULATED})
-   \]
+### B6.4. Bài giải mẫu với số đo thật CN-T3
 
-Giá trị thực nghiệm đo đạc thực tế: tỷ lệ mất frame đạt **24,0%** (MEASURED, `hw_tables.md`), sai lệch dưới 0,1% so với mô hình giải tích.
+Ở cấu hình `loss5` của CN-T3, netem được đặt mất 5%. Máy nhận đo được tỉ lệ mất gói 5,2% và trung bình 5,106 gói mỗi ảnh (MEASURED, `hw_tables.md`).
 
-<div class="widget" data-widget="framesuccess" data-title="Xác suất tái cấu trúc frame theo p và N"></div>
+Bước 1 — xác suất một gói đến nơi: \(1-0{,}052=0{,}948\).
 
-*Quan sát tương tác:* Giữ nguyên \(p = 5\%\), khi tăng \(N\) từ 2 lên 12 (tương ứng kích thước frame lớn hoặc payload MTU nhỏ), tỷ lệ mất frame tăng vọt từ 9,75% lên 46,0%.
+Bước 2 — lũy thừa 5,106. Dùng logarit: \(\ln 0{,}948=-0{,}05340\); nhân \(5{,}106\): \(-0{,}2727\); lấy \(e^{-0{,}2727}=0{,}7613\).
 
-### B6.3. Giới hạn của mô hình: Mất mát theo cụm (Burst Loss)
-Khi mạng xuất hiện mất mát tương quan theo thời gian (mô hình Markov 2 trạng thái Gilbert–Elliott), các packet mất có xu hướng tập trung thành chuỗi dài.
-Trong bài đo `ge5_b4` (loss gemodel 1.316% 25% 100% 0%, độ dài cụm xấu trung bình \(1/r = 4\) packet), tỷ lệ mất packet đo được là 5,3%, nhưng tỷ lệ mất frame thực tế chỉ là **8,8%** (MEASURED, `hw_tables.md`).
-Lý do: Hiện tượng mất tập trung làm nhiều packet bị rơi dồn vào cùng một frame đã hỏng, giúp các frame lân cận hoàn toàn không bị ảnh hưởng. Công thức \((1-p)^N\) không áp dụng được cho kênh truyền có nhớ.
+Bước 3 — \(P_{\mathrm{loss}}=1-0{,}7613=0{,}239\), tức **23,9%** (CALCULATED).
 
-<p class="key">Mất packet độc lập khuếch đại tỷ lệ mất frame theo lũy thừa 1−(1−p)^N (5,2% packet loss biến thành 24,0% frame loss). Mất theo cụm (burst) dồn hư hỏng vào ít frame hơn nên giảm tỷ lệ mất frame tổng thể.</p>
+Đo thật: **24,0%** ảnh bị mất (MEASURED). Công thức khớp rất sát. (Bảng `hw_tables.md` ghi cột CALCULATED là 0,230 vì nó dùng \(p\) cấu hình 0,05 thay vì \(p\) đo 0,052.)
 
-**Tự luyện**
+**5,2% gói mất → 24% ảnh mất.** Đây là con số trung tâm để giải thích vì sao chia ảnh thành nhiều gói làm hệ thống nhạy cảm với mất gói.
 
 **Bạn tự làm.** Ở `loss10`, mất gói đo được 10,0% và 5,107 gói/ảnh. Dự đoán tỉ lệ mất ảnh.
 
 ??? success "Xem đáp án"
     \(\ln 0{,}9=-0{,}10536\); \(\times5{,}107=-0{,}5381\); \(e^{-0{,}5381}=0{,}5839\); \(P_{\mathrm{loss}}=41{,}6\%\) (CALCULATED). Đo thật: 41,5% (MEASURED, `hw_tables.md`).
 
+<div class="widget" data-widget="framesuccess" data-title="Xác suất ghép thành công theo p và N"></div>
+
+**Câu hỏi khi dùng widget:** giữ \(p\) cố định ở 15%, giảm số gói từ 6 xuống 2. Tỉ lệ ghép thành công thay đổi thế nào? (Đáp: từ \(0{,}85^6=37{,}7\%\) lên \(0{,}85^2=72{,}25\%\), CALCULATED.) Đây chính là lý do bộ điều khiển thích nghi giảm kích thước ảnh khi mạng xấu: ít gói hơn thì mỗi ảnh ít "cửa" để hỏng hơn.
+
+### B6.5. Mất độc lập và mất theo cụm (burst)
+
+Công thức trên giả định mỗi gói mất độc lập. Mạng thật hay mất theo **cụm (burst)**: khi đã mất một gói, gói kế tiếp cũng dễ mất.
+
+Ví dụ minh họa: 4 ảnh, mỗi ảnh 5 gói, tổng 20 gói, mất đúng 4 gói.
+
+| Kiểu mất | Gói mất | Ảnh hỏng |
+|---|---|---|
+| Rải đều | 1 gói ở mỗi ảnh | **4/4** ảnh hỏng |
+| Theo cụm | 4 gói liền nhau trong ảnh 2 | **1/4** ảnh hỏng |
+
+Cùng số gói mất, nhưng mất theo cụm làm hỏng **ít ảnh hơn**, vì các gói mất "dồn" vào cùng một ảnh vốn đã hỏng.
+
+Số đo thật xác nhận: cấu hình `ge5_b4` (mô hình Gilbert–Elliott, cụm trung bình khoảng 4 gói) có mất gói 5,3% nhưng chỉ **8,8%** ảnh mất, so với 24,0% ở `loss5` có mất gói gần bằng (MEASURED, `hw_tables.md`). Với mất theo cụm, không được dùng công thức \((1-p)^N\).
+
+<p class="key">Vì mọi gói của ảnh đều bắt buộc, xác suất ảnh thành công là (1−p)^N; ở CN-T3, 5,2% gói mất biến thành 24% ảnh mất. Mất theo cụm làm hỏng ít ảnh hơn mất rải đều.</p>
+
 ---
 
-## B7. Đo lường Jitter theo chuẩn RFC 3550
+## B7. Jitter: gửi đều nhưng đến không đều
 
-### B7.1. Định nghĩa và công thức lọc thông thấp đệ quy
-Jitter biểu thị độ dao động thống kê của khoảng thời gian truyền packet qua mạng, không phải là giá trị trễ tuyệt đối (One-Way Delay). Một kênh truyền có trễ cố định 200 ms nhưng hoàn toàn ổn định sẽ có jitter bằng 0.
+### B7.1. Vấn đề
 
-Xét hai packet liên tiếp \(i-1\) và \(i\) có timestamp media gửi là \(S_{i-1}, S_i\) và thời điểm tiếp nhận là \(R_{i-1}, R_i\) (quy đổi về đơn vị tick 90 kHz). Độ sai lệch thời gian tương đối \(D_i\) được tính bằng:
+Sender gửi ảnh **đều đặn** 66,67 ms một lần. Nhưng mỗi gói đi qua mạng mất một khoảng thời gian hơi khác nhau, vì có lúc hàng đợi ở switch dài, có lúc ngắn. Kết quả: ở máy nhận, các ảnh đến cách nhau lúc 60 ms, lúc 75 ms, lúc 66 ms. Nếu phát ảnh ngay khi đến, video sẽ giật cục.
+
+Sự dao động của khoảng cách đến này gọi là **jitter (độ dao động trễ)**. Lưu ý: jitter **không phải** độ trễ trung bình. Một đường truyền có trễ cố định 200 ms vẫn có jitter bằng 0, vì mọi gói đều trễ y như nhau.
+
+### B7.2. Ví dụ đơn giản trên trục thời gian
+
+Ví dụ minh họa: ba ảnh gửi ở 0; 66,67; 133,33 ms (đồng hồ sender). Chúng đến máy nhận ở 20; 90; 150 ms (đồng hồ receiver).
+
+<svg viewBox="0 0 760 170" width="100%" style="max-width:760px;display:block;margin:1rem auto;" role="img" aria-label="Gửi đều nhưng đến không đều">
+  <text x="10" y="40" fill="currentColor" font-size="12" font-weight="700">Gửi</text>
+  <line x1="70" y1="35" x2="740" y2="35" stroke="currentColor"/>
+  <text x="10" y="130" fill="currentColor" font-size="12" font-weight="700">Đến</text>
+  <line x1="70" y1="125" x2="740" y2="125" stroke="currentColor"/>
+  <circle cx="90" cy="35" r="5" fill="#14B8A6"/><text x="90" y="22" text-anchor="middle" fill="currentColor" font-size="11">F1: 0</text>
+  <circle cx="290" cy="35" r="5" fill="#14B8A6"/><text x="290" y="22" text-anchor="middle" fill="currentColor" font-size="11">F2: 66,67</text>
+  <circle cx="490" cy="35" r="5" fill="#14B8A6"/><text x="490" y="22" text-anchor="middle" fill="currentColor" font-size="11">F3: 133,33</text>
+  <circle cx="150" cy="125" r="5" fill="#F59E0B"/><text x="150" y="148" text-anchor="middle" fill="currentColor" font-size="11">20</text>
+  <circle cx="360" cy="125" r="5" fill="#F59E0B"/><text x="360" y="148" text-anchor="middle" fill="currentColor" font-size="11">90</text>
+  <circle cx="540" cy="125" r="5" fill="#F59E0B"/><text x="540" y="148" text-anchor="middle" fill="currentColor" font-size="11">150</text>
+  <line x1="90" y1="40" x2="150" y2="120" stroke="currentColor" stroke-dasharray="4 3"/>
+  <line x1="290" y1="40" x2="360" y2="120" stroke="currentColor" stroke-dasharray="4 3"/>
+  <line x1="490" y1="40" x2="540" y2="120" stroke="currentColor" stroke-dasharray="4 3"/>
+  <text x="255" y="85" fill="currentColor" font-size="11">khoảng gửi 66,67 ms → khoảng đến 70 ms</text>
+  <text x="470" y="85" fill="currentColor" font-size="11">66,67 ms → 60 ms</text>
+  <text x="600" y="160" fill="currentColor" font-size="11">thời gian (ms)</text>
+</svg>
+
+Khoảng gửi luôn là 66,67 ms. Khoảng đến là 70 ms rồi 60 ms. Độ lệch giữa khoảng đến và khoảng gửi là: \(70-66{,}67=+3{,}33\) ms rồi \(60-66{,}67=-6{,}67\) ms. Jitter đo **độ lớn trung bình** của những độ lệch này.
+
+Có một điểm tinh tế: máy nhận **không biết** thời điểm gửi thật (đồng hồ Pi và laptop không đồng bộ). Nó chỉ biết **RTP timestamp** — thời điểm chụp ghi trong gói. Vì timestamp tăng đều theo nhịp camera, khoảng timestamp thay được cho khoảng gửi.
+
+### B7.3. Công thức RFC 3550
+
+Với hai gói liên tiếp \(i-1\) và \(i\), máy nhận tính **độ lệch** (đơn vị tick 90 kHz):
+
 \[
-D_i = (R_i - R_{i-1}) - (S_i - S_{i-1}) = (R_i - S_i) - (R_{i-1} - S_{i-1})
-\]
-Theo RFC 3550 §6.4.1, giá trị ước lượng jitter \(J_i\) được cập nhật qua bộ lọc thông thấp đệ quy bậc một với hệ số suy giảm \(\alpha = 1/16\):
-\[
-J_i = J_{i-1} + \frac{|D_i| - J_{i-1}}{16} = \frac{15}{16}J_{i-1} + \frac{1}{16}|D_i|
+D_i=(R_i-R_{i-1})-(S_i-S_{i-1})
 \]
 
-Hiện thực mã nguồn trong `cn/rtp/rtp/rxstats.py`:
+- \(R_i\): thời điểm đến của gói \(i\), đổi sang tick 90 kHz theo đồng hồ máy nhận.
+- \(S_i\): RTP timestamp của gói \(i\) (tick).
+- \(R_i-R_{i-1}\): khoảng đến; \(S_i-S_{i-1}\): khoảng media.
+
+Rồi cập nhật jitter bằng một bộ lọc làm mượt:
+
+\[
+J_i=J_{i-1}+\frac{|D_i|-J_{i-1}}{16}
+\]
+
+Mỗi gói mới chỉ kéo \(J\) dịch đi \(1/16\) khoảng cách tới \(|D_i|\). Đây là bộ lọc thông thấp bậc một bạn đã gặp trong DSP: \(J_i=\tfrac{15}{16}J_{i-1}+\tfrac{1}{16}|D_i|\). Nhờ đó một gói "bất thường" không làm jitter nhảy vọt.
+
+Trong mã, máy nhận lưu **transit** \(=R_i-S_i\) và lấy hiệu hai transit liên tiếp — cùng một phép tính viết gọn hơn:
+
 ```python
         arrival_ts = (arrival_ns * self.clock_rate) // 1_000_000_000
         transit = arrival_ts - rtp_ts
@@ -354,65 +625,99 @@ Hiện thực mã nguồn trong `cn/rtp/rtp/rxstats.py`:
             self.jitter += (difference - self.jitter) / 16.0
         self.transit = transit
 ```
-*(SOURCE: `cn/rtp/rtp/rxstats.py`)*
 
-### B7.2. Ví dụ tính toán từng bước
-Giả sử trạng thái ban đầu \(J_0 = 0\). Packet 1 và 2 có độ lệch khoảng đến so với mốc media là \(|D_1| = 300\text{ tick}\) (\(3{,}33\text{ ms}\)):
+(SOURCE: `cn/rtp/rtp/rxstats.py`, `SourceStats.update`.)
+
+### B7.4. Bài giải mẫu
+
+Dùng ví dụ ở B7.2, bắt đầu với \(J_0=0\).
+
+**Gói F2.** Khoảng đến 70 ms \(=70\times90=6300\) tick. Khoảng timestamp 6000 tick.
+
 \[
-J_1 = 0 + \frac{300 - 0}{16} = 18{,}75\text{ tick} \implies \frac{18{,}75}{90} \approx 0{,}208\text{ ms}\quad (\text{CALCULATED})
+D_2=6300-6000=300\text{ tick}
 \]
-Packet kế tiếp có \(|D_2| = 600\text{ tick}\) (\(6{,}67\text{ ms}\)):
+
 \[
-J_2 = 18{,}75 + \frac{600 - 18{,}75}{16} = 18{,}75 + 36{,}33 = 55{,}08\text{ tick} \implies \frac{55{,}08}{90} \approx 0{,}612\text{ ms}\quad (\text{CALCULATED})
+J_2=0+\frac{300-0}{16}=18{,}75\text{ tick}=\frac{18{,}75}{90}\text{ ms}=0{,}208\text{ ms}
 \]
-Hệ số \(1/16\) ngăn chặn phản ứng thái quá của bộ ước lượng trước các xung trễ đột biến cục bộ.
 
-<div class="widget" data-widget="jitter" data-title="Khảo sát đáp ứng bộ lọc jitter RFC 3550"></div>
+**Gói F3.** Khoảng đến 60 ms \(=5400\) tick. \(D_3=5400-6000=-600\), \(|D_3|=600\).
 
-### B7.3. Phân tích kết quả thực nghiệm
-![Jitter RFC 3550 theo từng gói nhận thực tế](../assets/fig/plots/02_jitter_time.png)
+\[
+J_3=18{,}75+\frac{600-18{,}75}{16}=18{,}75+36{,}33=55{,}08\text{ tick}\approx0{,}612\text{ ms}
+\]
 
-!!! example "Cách đọc hình: Biểu đồ Jitter thời gian thực"
-    - **Panel trái (Ethernet sạch · T2/run1):** Jitter duy trì ổn định tại mức sàn 0,14 ms. Xung gai đột biến lên khoảng 4,6 ms quanh giây thứ 45 (nguyên nhân không được ghi trong dữ liệu), sau đó suy giảm hàm mũ về mức sàn theo đúng đặc tính bộ lọc \(1/16\).
-    - **Panel phải (netem loss 5% · T3/run1):** Jitter dao động liên tục trong dải 0,10–0,33 ms dạng răng cưa, phản ánh biến động hàng đợi khi có mất gói. Giá trị trung bình cuối phiên đạt 0,22 ms (MEASURED, `hw_tables.md`).
+(CALCULATED, số đầu vào là Ví dụ minh họa.) Dù độ lệch thật là 3,33 ms và 6,67 ms, jitter ước lượng mới chỉ lên 0,612 ms, vì bộ lọc tăng từ từ.
 
-!!! note "Độ tán xạ nội khung (Intra-frame spread)"
-    Các packet thuộc cùng một frame chia sẻ chung timestamp media (\(S_i - S_{i-1} = 0\)). Khoảng thời gian tuần tự hóa và trễ truyền dẫn giữa các mảnh liên tiếp đóng góp trực tiếp vào \(D_i\). Do đó, jitter đo được trên phần cứng không bao giờ triệt tiêu về 0 ngay cả trên liên kết Ethernet hoàn hảo (SOURCE: `cn/rtp/TEST_SCENARIOS.md`).
-
-<p class="key">Jitter RFC 3550 đo biến thiên trễ tương đối qua bộ lọc làm mượt J += (|D| − J)/16; giá trị đo thực tế đạt 0,14 ms trên Ethernet sạch và 0,22 ms khi có 5% mất packet.</p>
-
-**Tự luyện**
-
-**Bạn tự làm.** Packet kế tiếp có \(D_3=0\). \(J_3\) bằng bao nhiêu?
+**Bạn tự làm.** Gói F4 đến đúng 66,67 ms sau F3 (\(D_4=0\)). \(J_4\) bằng bao nhiêu?
 
 ??? success "Xem đáp án"
-    \(J_3=55{,}08+\frac{0-55{,}08}{16}=55{,}08-3{,}44=51{,}64\) tick \(\approx0{,}574\) ms (CALCULATED). Khi mạng trở lại đều, jitter **giảm dần**, không về 0 ngay.
+    \(J_4=55{,}08+\frac{0-55{,}08}{16}=55{,}08-3{,}44=51{,}64\) tick \(\approx0{,}574\) ms (CALCULATED). Khi mạng trở lại đều, jitter **giảm dần**, không về 0 ngay.
+
+<div class="widget" data-widget="jitter" data-title="Bộ lọc jitter RFC 3550 phản ứng thế nào"></div>
+
+**Trước khi thử:** nếu mọi gói đều có \(|D|=10\) ms, sau bao nhiêu gói jitter đạt gần 10 ms? Sau khi thử, bạn sẽ thấy đường jitter tăng theo dạng mũ, sau vài chục gói mới tiến sát giá trị đầu vào. Gói đầu tiên chỉ cho \(10/16=0{,}625\) ms.
+
+### B7.5. Đọc số đo thật
+
+![Jitter RFC 3550 theo từng gói nhận thực tế](../assets/fig/plots/02_jitter_time.png)
+
+!!! example "Cách đọc hình"
+    **Trục ngang:** thời gian từ gói đầu tiên (giây), khoảng 0–65 s. **Trục dọc:** jitter RFC 3550 (ms). Chú ý hai panel có **thang đo khác nhau**.
+
+    **Panel trái — "Ethernet sạch · T2/run1":** jitter nằm phẳng quanh 0,15 ms gần suốt lần chạy, có một gai đơn lẻ lên khoảng 4,6 ms quanh giây thứ 45 rồi tắt dần trong vài giây — đúng dáng bộ lọc 1/16 vừa học.
+
+    **Panel phải — "netem loss 5% · T3/run1":** jitter dao động khoảng 0,1–0,33 ms, có dạng răng cưa lặp lại, và một gai lên khoảng 0,73 ms quanh giây thứ 21.
+
+    **So sánh với bảng:** jitter cuối lần chạy trung bình 5 lần là 0,14 ms ở T2 và 0,22 ms ở T3 `loss5` (MEASURED, `hw_tables.md`). Khi cố ý thêm trễ dao động `delay 20ms 20ms distribution normal` ở CN-T4, jitter đo được lên khoảng 15–17 ms.
+
+    **Không được đọc** đường này như độ trễ một chiều: nó đo *độ dao động* của khoảng đến, không đo gói mất bao lâu để tới nơi.
+
+!!! note "Một chi tiết hay bị hỏi"
+    Sáu gói của cùng một ảnh có **cùng timestamp** nhưng đến cách nhau một chút. Với chúng, \(S_i-S_{i-1}=0\), nên toàn bộ khoảng đến giữa hai mảnh được tính vào \(D\). Tài liệu thí nghiệm của nhóm ghi rõ: jitter "includes the intra-frame spread — reported, not hidden" (SOURCE: `cn/rtp/TEST_SCENARIOS.md`). Vì vậy jitter đo được không bao giờ bằng đúng 0, kể cả trên Ethernet sạch.
+
+<p class="key">Jitter đo độ dao động của khoảng đến so với khoảng media, không phải độ trễ trung bình; RFC 3550 làm mượt nó bằng bộ lọc J += (|D| − J)/16. Ethernet sạch đo được khoảng 0,14 ms.</p>
 
 ---
 
-## B8. Bộ đệm Playout và thời hạn phát (Playout Deadline)
+## B8. Playout: chờ bao lâu thì đủ?
 
-### B8.1. Thiết lập mốc tham chiếu (Anchor) và công thức hạn phát
-Bộ đệm playout hấp thụ biến động jitter mạng để tái tạo chu kỳ phát frame đều đặn. Để khôi phục đúng nhịp gốc của camera mà không phụ thuộc vào độ lệch đồng hồ giữa hai máy, receiver thiết lập điểm neo tại packet đầu tiên tiếp nhận:
-- Mốc thời gian receiver: \(t_0\) (thời điểm nhận packet đầu).
-- Mốc timestamp media: \(TS_0\).
+### B8.1. Vì sao máy nhận không thể chờ mãi?
 
-Hạn phát danh định \(d_i\) của frame thứ \(i\) có timestamp \(TS_i\) được tính theo công thức:
+Máy nhận muốn hai điều mâu thuẫn. Nó muốn **chờ thêm** để gói đến muộn kịp có mặt, ảnh được ghép đủ. Nhưng nó cũng muốn **giao ảnh sớm**, vì ảnh càng giữ lâu càng cũ, và một ảnh bị mất gói thì chờ bao lâu cũng không đủ được.
+
+Giải pháp là đặt cho mỗi ảnh một **hạn phát (playout deadline)**: đến giờ đó mà ảnh đủ thì giao; chưa đủ thì coi là hỏng. Vùng chờ ngắn giữ ảnh đến giờ phát gọi là **playout buffer (bộ đệm phát)**. Khoảng chờ cố định thêm vào gọi là **độ sâu bộ đệm (playout delay, buffer depth)** \(B\).
+
+### B8.2. Hạn phát được tính thế nào?
+
+Ý tưởng: dựng lại **lịch phát đều** giống nhịp camera, dựa trên RTP timestamp.
+
+1. Gói **đầu tiên** của phiên đến lúc \(t_0\), mang timestamp \(TS_0\). Đây là **mốc neo (anchor)**.
+2. Một ảnh có timestamp \(TS_i\) được chụp sau ảnh đầu \((TS_i-TS_0)/90\,000\) giây.
+3. Hạn phát của nó là mốc neo, cộng khoảng media đó, cộng độ sâu bộ đệm:
+
 \[
-d_i = t_0 + \frac{TS_i - TS_0}{90000} + B
+d_i=t_0+\frac{TS_i-TS_0}{90\,000}+B
 \]
-Trong đó \(B\) là độ sâu bộ đệm cấu hình (`--playout-ms`, mặc định 100 ms trong `receiver.py`; 50 ms trong CN-T2).
+
+Mã Python viết đúng như vậy, tính bằng nano-giây:
 
 ```python
         deadline = t0 + (extended - ts0) * 1_000_000_000 // CLOCK_RATE + self.delay_ns
 ```
-*(SOURCE: `cn/rtp/rtp/playout.py`)*
 
-Khoảng cách hạn phát giữa hai frame liên tiếp luôn bảo toàn chính xác chu kỳ media:
-\[
-d_{i} - d_{i-1} = \frac{TS_i - TS_{i-1}}{90000} = \frac{6000}{90000} = 66{,}67\text{ ms}
-\]
-Nếu tính hạn phát bằng \(\text{thời điểm đến} + B\), các biến động trễ mạng sẽ bị dịch chuyển sang tầng ứng dụng thay vì được khử bỏ.
+(SOURCE: `cn/rtp/rtp/playout.py`, `PlayoutBuffer.add`; `extended` là timestamp đã xử lý quay vòng 32 bit bằng `unwrap32`.) Độ sâu mặc định là 100 ms (`--playout-ms`, SOURCE: `receiver.py`); CN-T2 dùng 50 ms.
+
+### B8.3. Ví dụ trên một trục thời gian
+
+Ví dụ minh họa: gói đầu đến lúc 20 ms, \(B=50\) ms, 15 FPS. Hạn phát (CALCULATED):
+
+- Ảnh 0: \(20+0+50=70\) ms.
+- Ảnh 1: \(20+66{,}67+50=136{,}67\) ms.
+- Ảnh 2: \(20+133{,}33+50=203{,}33\) ms.
+
+Giả sử ảnh 1 ghép đủ lúc 110 ms, ảnh 2 có mảnh cuối đến lúc 215 ms.
 
 <svg viewBox="0 0 760 175" width="100%" style="max-width:760px;display:block;margin:1rem auto;" role="img" aria-label="Mốc neo, hạn phát và trạng thái của ba ảnh">
   <line x1="40" y1="90" x2="740" y2="90" stroke="currentColor"/>
@@ -426,69 +731,127 @@ Nếu tính hạn phát bằng \(\text{thời điểm đến} + B\), các biến
   <line x1="548" y1="40" x2="548" y2="140" stroke="#14B8A6" stroke-dasharray="5 3"/>
   <text x="548" y="34" text-anchor="middle" fill="#14B8A6" font-size="11">d2 = 203,33</text>
   <circle cx="315" cy="90" r="6" fill="#14B8A6"/>
-  <text x="315" y="125" text-anchor="middle" fill="currentColor" font-size="11">F1 đủ: 110</text>
-  <text x="315" y="140" text-anchor="middle" fill="currentColor" font-size="11">chờ d1 → ok</text>
+  <text x="315" y="125" text-anchor="middle" fill="currentColor" font-size="11">ảnh 1 đủ: 110</text>
+  <text x="315" y="140" text-anchor="middle" fill="currentColor" font-size="11">chờ tới d1 → ok</text>
   <circle cx="577" cy="90" r="6" fill="#EC4899"/>
-  <text x="600" y="125" text-anchor="middle" fill="currentColor" font-size="11">F2 đủ: 215</text>
+  <text x="600" y="125" text-anchor="middle" fill="currentColor" font-size="11">ảnh 2 đủ: 215</text>
   <text x="600" y="140" text-anchor="middle" fill="currentColor" font-size="11">sau d2 → late</text>
-  <text x="381" y="165" text-anchor="middle" fill="currentColor" font-size="11">Hạn phát cách đều 66,67 ms theo timestamp 90 kHz; hấp thụ jitter nhỏ hơn B</text>
+  <text x="381" y="165" text-anchor="middle" fill="currentColor" font-size="11">Hạn phát cách nhau đúng 66,67 ms vì tính theo timestamp, không theo giờ đến</text>
 </svg>
 
-### B8.2. Phân loại trạng thái Frame
-Mỗi frame trong `frames_rx.csv` được phân định vào 1 trong 3 trạng thái duy nhất:
+- Ảnh 1 đủ lúc 110 ms, **sớm hơn** hạn 136,67 ms. Bộ đệm giữ nó thêm 26,67 ms rồi giao cho AI đúng lúc 136,67 ms. Trạng thái: `ok`.
+- Ảnh 2 đủ lúc 215 ms, **muộn hơn** hạn 203,33 ms. Dù đủ byte, nó bị gắn `late` và không giao cho AI.
+
+### B8.4. Vì sao không dùng "giờ đến + B"?
+
+Một cách nghĩ tự nhiên là: "mỗi ảnh đến thì chờ thêm 50 ms rồi phát". Với ví dụ trên, ảnh 1 sẽ phát lúc \(110+50=160\) ms và ảnh 2 lúc \(215+50=265\) ms — cách nhau 105 ms thay vì 66,67 ms. Cách đó chỉ **dời** sự không đều của mạng sang sau 50 ms chứ không **khử** nó. Dùng timestamp, hạn phát luôn cách nhau đúng nhịp camera, và mọi dao động nhỏ hơn \(B\) bị hấp thụ.
+
+### B8.5. Ba trạng thái cuối của một ảnh
+
+Mỗi ảnh nhìn thấy ở máy nhận được ghi đúng một dòng trong `frames_rx.csv` với một trong ba trạng thái (SOURCE: docstring và hàm `_finish` trong `playout.py`):
+
 ```python
         status = "lost" if not complete else ("ok" if frame.completed <= frame.deadline else "late")
 ```
-*(SOURCE: `cn/rtp/rtp/playout.py`)*
 
-1. `ok`: Thu nhận đủ 100% byte dữ liệu trước hoặc đúng hạn phát (\(t_{\text{complete}} \le d_i\)). Frame được giữ lại bộ đệm cho đến \(d_i\) mới chuyển sang tầng suy luận AI.
-2. `late`: Thu nhận đủ byte nhưng sau hạn phát (\(d_i < t_{\text{complete}} \le d_i + \text{late\_window}\)). Bị loại bỏ, không chuyển sang AI.
-3. `lost`: Không thu nhận đủ dữ liệu khi đã hết cửa sổ trễ late window (mặc định 1000 ms, `--late-window-ms`).
+| Trạng thái | Điều kiện | Đến AI? |
+|---|---|---|
+| `ok` | Đủ byte **trước hoặc đúng** hạn phát | Có, đúng lúc hạn phát |
+| `late` | Đủ byte nhưng **sau** hạn phát (trong cửa sổ muộn) | Không |
+| `lost` | Vẫn chưa đủ khi hết hạn phát + cửa sổ muộn | Không |
 
-<div class="widget" data-widget="deadline" data-title="Mô phỏng hạn phát và độ sâu bộ đệm"></div>
+**Cửa sổ muộn (late window)** mặc định 1000 ms (`--late-window-ms`, SOURCE: `receiver.py`). Nó chỉ dùng để *phân loại* — chờ thêm để biết ảnh là "muộn" hay "mất hẳn" — chứ không làm ảnh muộn được dùng.
 
-### B8.3. Trade-off thực nghiệm trong CN-T4
-Chiến dịch CN-T4 khảo sát sự đánh đổi giữa tỷ lệ trượt hạn và độ trễ phân phát khi thay đổi \(B \in \{20, 50, 100, 200\}\text{ ms}\) dưới điều kiện nhiễu jitter mạnh (`delay 20ms 20ms distribution normal`).
+**Bạn tự làm.** Với cùng mốc neo 20 ms và \(B=50\) ms, hạn phát của ảnh 3 là bao nhiêu? Nếu ảnh 3 đủ lúc 265 ms thì trạng thái gì?
+
+??? success "Xem đáp án"
+    \(d_3=20+3\times66{,}67+50=270\) ms (CALCULATED). Ảnh đủ lúc 265 ms < 270 ms nên `ok`; bộ đệm giữ nó thêm 5 ms.
+
+<div class="widget" data-widget="deadline" data-title="Bảng hạn phát: thử đổi độ sâu bộ đệm"></div>
+
+**Trước khi thử:** giảm độ sâu bộ đệm từ 100 ms xuống 20 ms, dự đoán số ảnh `late` thay đổi thế nào khi mạng có jitter lớn? Sau khi thử: bộ đệm nhỏ làm hạn phát sát giờ đến, nên chỉ cần một gói chậm hơn thường là ảnh trượt hạn.
+
+### B8.6. Đọc kết quả thực nghiệm CN-T4
+
+CN-T4 cố ý làm mạng dao động bằng netem rồi đổi độ sâu bộ đệm \(D\) = 20, 50, 100, 200 ms, mỗi cấu hình chạy 5 lần.
 
 ![Trade-off độ trễ và tỉ lệ frame muộn ở CN-T4](../assets/fig/plots/03_playout_tradeoff.png)
 
-| Cấu hình đệm \(B\) | Tỷ lệ trượt hạn (`late`) | Độ trễ Capture \(\to\) AI P50 | Tốc độ kết quả AI |
-|:---:|:---:|:---:|:---:|
-| 20 ms | **93,5%** | 37,91 ms | 0,97 kết quả/s |
-| 50 ms | **14,3%** | 75,32 ms | 12,88 kết quả/s |
-| 100 ms | **0,0%** | 117,68 ms | 15,01 kết quả/s |
-| 200 ms | **0,0%** | 216,61 ms | 15,02 kết quả/s |
-*(MEASURED, `hw_tables.md`, trung bình 5 lần chạy)*
+!!! example "Cách đọc hình"
+    **Panel trái — "Tỉ lệ frame trượt deadline":** trục ngang là độ sâu bộ đệm \(D\) (ms), trục dọc là phần trăm ảnh muộn. Đường cam là cấu hình jitter 20 ms (`delay 20ms 20ms distribution normal`), đường xanh là jitter 5 ms (`delay 20ms 5ms`).
 
-!!! example "Cách đọc hình: Sự đánh đổi độ trễ và độ tin cậy"
-    - Khi \(B = 20\text{ ms}\), bộ đệm quá hẹp so với biên độ jitter mạng (khoảng dao động \(\pm 20\text{ ms}\)), khiến 93,5% frame bị đánh dấu `late` dù dữ liệu không hề bị mất.
-    - Tăng \(B\) lên 100 ms giúp triệt tiêu hoàn toàn hiện tượng trượt deadline (late giảm về 0%), nhưng làm độ trễ P50 tăng tuyến tính thêm khoảng 80 ms.
-    - Tiếp tục tăng \(B\) lên 200 ms không mang lại thêm lợi ích về tỷ lệ nhận (vẫn 0% late), trong khi làm trễ hệ thống tăng lãng phí lên 216,61 ms.
-    - Bộ đệm playout chỉ khắc phục được trễ dao động, hoàn toàn **không thể cứu được packet bị mất thật sự** trên kênh truyền.
+    **Panel phải — "Trung bình P50 qua 5 lần chạy":** cùng trục ngang, trục dọc là độ trễ chụp → kết quả AI, trung vị P50 (ms). **P50** (trung vị) nghĩa là một nửa số ảnh nhanh hơn mốc này, một nửa chậm hơn.
 
-<p class="key">Hạn phát deadline thiết lập mốc thời gian đều đặn d_i = t0 + ΔTS/90000 + B. CN-T4 chứng minh: tăng bộ đệm từ 20 lên 100 ms giảm tỷ lệ late từ 93,5% về 0%, đánh đổi bằng việc tăng trễ P50 từ 38 lên 118 ms.</p>
+    **Ba giá trị cụ thể (MEASURED, `hw_tables.md`, jitter 20 ms):** \(D\)=20 ms → 93,5% ảnh muộn, P50 37,91 ms. \(D\)=50 ms → 14,3% muộn, P50 75,32 ms. \(D\)=100 ms → 0% muộn, P50 117,68 ms. \(D\)=200 ms vẫn 0% muộn nhưng P50 lên 216,61 ms.
+
+    **Giải thích:** khi dao động trễ lớn hơn \(D\), nhiều ảnh có mảnh cuối đến sau hạn. Tăng \(D\) cho mảnh thêm thời gian, nên tỉ lệ muộn giảm — nhưng mỗi ảnh cũng bị giữ lâu hơn, nên độ trễ tăng gần như cộng thẳng thêm \(D\). Với jitter 5 ms, mọi \(D\) đều 0% muộn; tăng \(D\) chỉ thêm trễ.
+
+    **Hình KHÔNG chứng minh:** "bộ đệm càng lớn càng tốt" (từ 100 lên 200 ms không thêm lợi ích, chỉ thêm khoảng 100 ms trễ), và cũng không cho một giá trị \(D\) tối ưu chung cho mọi mạng.
+
+!!! warning "Bộ đệm không sửa được gói mất"
+    Chờ lâu hơn chỉ giúp những gói **còn đang trên đường**. Gói đã bị mạng bỏ thì không bao giờ tới. Ở CN-T4 không cấu hình mất gói, nên ảnh "muộn" ở đây là ảnh đủ byte nhưng trễ — đúng loại mà tăng \(D\) cứu được.
+
+??? note "Đào sâu: điểm yếu của mốc neo cố định"
+    Mốc neo lấy từ **gói đầu tiên** của phiên và không bao giờ cập nhật (SOURCE: `self.anchors[packet.ssrc]` chỉ gán một lần). Nếu gói đầu tình cờ đến rất nhanh, mọi hạn phát sau sẽ "chặt" hơn dự kiến; nếu gói đầu đến chậm, mọi hạn phát sẽ "lỏng" hơn. Đồng hồ hai máy trôi khác nhau trong phiên dài cũng làm hạn phát lệch dần. Bộ đệm thích nghi (tự chỉnh \(B\) theo jitter) có thể giảm vấn đề này nhưng nhóm **không** cài đặt nó; \(B\) cố định theo tham số dòng lệnh.
+
+<p class="key">Hạn phát = mốc neo + khoảng media theo timestamp + độ sâu bộ đệm. Đủ byte trước hạn là ok, đủ sau hạn là late, không đủ là lost. CN-T4 cho thấy tăng bộ đệm từ 20 lên 100 ms đưa ảnh muộn từ 93,5% về 0% nhưng thêm khoảng 80 ms trễ.</p>
 
 ---
 
-## B9. Kênh phản hồi RTCP Receiver Report (RR)
+## B9. RTCP Receiver Report: máy nhận "báo cáo" cho máy gửi
 
-### B9.1. Vai trò của kênh điều khiển ngược
-Sender phát dữ liệu UDP thuần túy không thể tự nhận biết suy hao chất lượng mạng. Giao thức RTCP (RFC 3550) cung cấp kênh giám sát định kỳ thông qua cổng UDP 5005.
+### B9.1. Vì sao máy gửi không tự biết?
 
-Bên nhận tổng hợp thống kê và phát gói **RTCP Receiver Report (PT = 201)** định kỳ mỗi 1,0 giây (`--rtcp-interval 1.0`, SOURCE: `sender.py`, `receiver.py`). Mỗi gói RR chứa một khối Report Block 24 byte:
+Pi gửi gói đi rồi không nhìn thấy gì nữa. Nó không biết gói nào mất, gói nào đến muộn, jitter bao nhiêu. Chỉ **máy nhận** thấy những điều đó. Nếu máy nhận không báo lại, máy gửi sẽ tiếp tục gửi y như cũ dù mạng đang mất 15% gói.
 
-| Trường | Kích thước | Ý nghĩa kỹ thuật |
-|:---:|:---:|:---|
-| `ssrc` | 32 bit | SSRC của nguồn phát được báo cáo |
-| `fraction_lost` | 8 bit | Tỷ lệ mất packet trong chu kỳ báo cáo gần nhất, nhân tỷ lệ 256 |
-| `cumulative_lost` | 24 bit | Tổng số packet mất tích lũy từ đầu phiên (dạng số bù hai có dấu) |
-| `ext_high_seq` | 32 bit | Sequence number mở rộng cao nhất đã ghi nhận |
-| `jitter` | 32 bit | Ước lượng jitter RFC 3550 hiện tại (đơn vị tick 90 kHz) |
-| `lsr` | 32 bit | 32 bit giữa của mốc NTP timestamp nhận được từ gói Sender Report (SR) gần nhất |
-| `dlsr` | 32 bit | Khoảng thời gian trễ từ khi nhận SR đến khi phát RR (đơn vị \(1/65536\text{ s}\)) |
+Vậy cần một **đường phản hồi (feedback)** từ máy nhận về máy gửi. Trong RTP, đường đó là **RTCP (RTP Control Protocol — giao thức điều khiển của RTP)**, chạy trên cổng UDP lẻ ngay sau cổng RTP (5005).
 
-### B9.2. Thuật toán lượng tử hóa `fraction_lost`
-Giá trị `fraction_lost` được tính toán trong `cn/rtp/rtp/rxstats.py`:
+### B9.2. Hình dung: bảng điểm định kỳ
+
+!!! tip "Hình dung"
+    Hãy nghĩ RTCP Receiver Report như **phiếu báo điểm hằng tuần** mà nhà trường gửi về cho phụ huynh. Phụ huynh (máy gửi) không ngồi trong lớp nên không biết con học thế nào. Mỗi tuần, phiếu báo: tuần này vắng mấy buổi (*mất gói trong kỳ*), từ đầu năm vắng tổng cộng bao nhiêu (*mất gói tích lũy*), đã học tới bài số mấy (*sequence cao nhất*), và học có đều không (*jitter*). Phụ huynh dựa vào phiếu để điều chỉnh — nhưng phiếu luôn **trễ** một chút, chỉ đến **định kỳ**, và có thể **thất lạc**.
+
+### B9.3. Một vòng phản hồi, theo thời gian
+
+```mermaid
+sequenceDiagram
+  participant S as Pi (sender)
+  participant R as Laptop (receiver)
+  S->>R: RTP gói media (cổng 5004), liên tục
+  S->>R: RTCP SR — Sender Report (mỗi 1 s, cổng 5005)
+  Note over R: rxstats.py đếm: kỳ vọng, đã nhận, jitter
+  R->>S: RTCP RR — Receiver Report (mỗi 1 s)
+  Note over S: đọc fraction_lost, jitter,<br/>tính RTT, nếu bật AIMD thì điều chỉnh ảnh sau
+  R->>S: RTCP APP "AIRS" — kết quả AI của một frame
+```
+
+Có bốn loại gói RTCP trong dự án (SOURCE: `rtcp.py`, `PT_SR, PT_RR, PT_SDES, PT_BYE, PT_APP = 200, 201, 202, 203, 204`):
+
+- **SR (Sender Report, PT 200)**: Pi gửi, mang đồng hồ NTP, timestamp RTP tương ứng, số gói và số byte đã gửi.
+- **RR (Receiver Report, PT 201)**: laptop gửi, mang các con số tiếp nhận. Đây là phần quan trọng nhất.
+- **SDES (PT 202)** mang tên định danh CNAME; **BYE (PT 203)** báo kết thúc phiên.
+- **APP "AIRS" (PT 204)**: gói riêng của nhóm mang kết quả AI (`rtp_ts`, `frame_id`, `class_id`, độ tin cậy 1 byte, thời điểm xong).
+
+Chu kỳ báo cáo trong thí nghiệm cố định 1 giây (`--rtcp-interval` mặc định 1, qua `fixed_rtcp_interval`, SOURCE: `sender.py`, `receiver.py`, `rtcp.py`).
+
+### B9.4. Các trường của một khối báo cáo RR
+
+Mỗi RR chứa một **report block** 24 byte cho nguồn được báo cáo (SOURCE: `rtcp.py`, `ReportBlock`):
+
+| Trường | Kích thước | Ý nghĩa |
+|---|---|---|
+| `ssrc` | 32 bit | Báo cáo về nguồn nào (SSRC của Pi) |
+| `fraction_lost` | 8 bit | Tỉ lệ mất **trong kỳ vừa qua**, nhân 256 |
+| `cumulative_lost` | 24 bit có dấu | Tổng số gói mất **từ đầu phiên** |
+| `ext_high_seq` | 32 bit | Sequence cao nhất đã thấy, dạng mở rộng (cộng số vòng × 65536) |
+| `jitter` | 32 bit | Jitter RFC 3550, đơn vị **tick 90 kHz** (chia 90 ra ms) |
+| `lsr` | 32 bit | 32 bit giữa đồng hồ NTP của SR gần nhất nhận được |
+| `dlsr` | 32 bit | Thời gian từ lúc nhận SR đó tới lúc gửi RR này, đơn vị 1/65536 s |
+
+### B9.5. Tính tay `fraction_lost`
+
+Máy nhận tính trong `rxstats.py`:
+
 ```python
             expected_interval = expected - self._expected_prior
             received_interval = self.received - self._received_prior
@@ -496,49 +859,97 @@ Giá trị `fraction_lost` được tính toán trong `cn/rtp/rtp/rxstats.py`:
             if expected_interval > 0 and lost_interval > 0:
                 fraction = min(255, (lost_interval << 8) // expected_interval)
 ```
-*(SOURCE: `cn/rtp/rtp/rxstats.py`)*
 
-Biểu thức giải tích:
+(SOURCE: `cn/rtp/rtp/rxstats.py`, `SourceStats.report`.) Bằng công thức:
+
 \[
-q = \min\left(255, \left\lfloor \frac{256 \times N_{\text{lost}}}{N_{\text{expected}}} \right\rfloor\right) \implies \text{Tỷ lệ mất giải mã} = \frac{q}{256}
+q=\left\lfloor\frac{256\cdot N_{\text{mất trong kỳ}}}{N_{\text{kỳ vọng trong kỳ}}}\right\rfloor,\qquad \text{tỉ lệ mất}\approx\frac{q}{256}
 \]
-Do số packet trong một chu kỳ 1 giây ở 15 FPS là hữu hạn (\(\approx 15 \times 5{,}1 \approx 76\text{ packet}\)), đại lượng \(q\) bị lượng tử hóa thành các mức bậc rời rạc:
-- Mất 1 packet: \(\lfloor 256/76 \rfloor = 3 \implies 3/256 = 1{,}17\%\) (CALCULATED).
-- Mất 2 packet: \(\lfloor 512/76 \rfloor = 6 \implies 6/256 = 2{,}34\%\) (CALCULATED).
-- Mất 4 packet: \(\lfloor 1024/76 \rfloor = 13 \implies 13/256 = 5{,}08\%\) (CALCULATED).
 
-### B9.3. Khảo sát thực nghiệm CN-T3
-![Báo cáo loss của RTCP RR so với cấu hình netem](../assets/fig/plots/04_rtcp_loss.png)
+`<< 8` nghĩa là nhân 256; `//` là chia lấy phần nguyên. "Kỳ vọng" lấy từ sequence: nếu sequence cao nhất tăng thêm 90 trong kỳ thì máy nhận kỳ vọng 90 gói, dù có thể chỉ nhận 85.
 
-!!! example "Cách đọc hình: Độ tin cậy của báo cáo RTCP"
-    - **Panel trái (CN-T3 · 5 lần chạy):** So sánh giữa mất gói cấu hình netem (0, 1, 5, 10%) với giá trị đo từ RTCP RR tích lũy (`cum_lost / expected`). Đường đo thực tế trùng khớp tuyệt đối với cấu hình: 0,000 / 0,010 / 0,052 / 0,100 (MEASURED, `hw_tables.md`).
-    - **Panel phải (T3/loss5/run1 · từng chu kỳ):** Giá trị `fraction_lost / 256` dao động ngẫu nhiên quanh mốc 5% từ 0% đến 13%, rơi chính xác vào các bậc rời rạc do kích thước mẫu ngắn (76 packet/s).
-    - Bộ điều khiển thích nghi tốc độ (AIMD) ở sender phải có cơ chế lọc nhiễu, tránh phản ứng đột ngột trước biến động tức thời của một gói RR đơn lẻ.
-    - Bản thân gói RTCP truyền qua UDP cũng có thể bị mất. Khi không nhận được RR, sender duy trì trạng thái hiện tại, tuyệt đối **không được suy diễn rằng mạng đang hoàn hảo (0% loss)**.
+**Bài giải mẫu.** Trong một giây, kỳ vọng 90 gói, nhận 85 gói.
 
-<p class="key">RTCP RR cung cấp phản hồi định kỳ mỗi 1 giây về mất gói và jitter. Trên toàn phiên, ước lượng RR trùng khớp cấu hình netem (5,2% đo tại netem 5%); theo từng chu kỳ, fraction_lost lượng tử hóa thành các bậc rời rạc do mẫu quan sát hữu hạn.</p>
-
-**Tự luyện**
+- Mất: \(90-85=5\).
+- \(q=\lfloor 5\times256/90\rfloor=\lfloor1280/90\rfloor=\lfloor14{,}22\rfloor=14\).
+- Sender giải mã: \(14/256=0{,}0547\), tức **5,47%** (CALCULATED). Tỉ lệ thật là \(5/90=5{,}56\%\); sai khác do làm tròn xuống.
 
 **Bạn tự làm.** CN-T3 có khoảng 15 ảnh/s × 5,1 gói/ảnh ≈ 76 gói mỗi giây. Nếu trong một kỳ mất 1, 2, 3 hoặc 4 gói trên 76, `fraction_lost / 256` ra bao nhiêu phần trăm?
 
 ??? success "Xem đáp án"
     \(\lfloor256/76\rfloor=3\to1{,}17\%\); \(\lfloor512/76\rfloor=6\to2{,}34\%\); \(\lfloor768/76\rfloor=10\to3{,}91\%\); \(\lfloor1024/76\rfloor=13\to5{,}08\%\) (CALCULATED). Báo cáo chỉ có thể nhận những **bậc rời rạc** này — bạn sẽ thấy đúng các bậc 1,2 / 2,3 / 3,9 / 5,1% trên hình dưới.
 
+### B9.6. Đọc số đo thật
+
+![Báo cáo loss của RTCP RR so với cấu hình netem](../assets/fig/plots/04_rtcp_loss.png)
+
+!!! example "Cách đọc hình"
+    **Panel trái — "CN-T3 · 5 lần chạy mỗi cấu hình":** trục ngang là mất gói cấu hình bằng netem (%), trục dọc là mất gói đo được (%). Chấm xanh nối liền là ước lượng từ RTCP RR (`cum_lost / expected`), vòng cam là ước lượng độc lập từ khoảng trống sequence ở máy nhận, đường đứt là "bằng cấu hình". Ở 0, 1, 5, 10%, ba thứ gần như trùng nhau: 0,000 / 0,010 / 0,052 / 0,100 (MEASURED, `hw_tables.md`).
+
+    **Panel phải — "T3/loss5/run1 · fraction_lost / 256":** trục ngang là thời gian từ RR đầy đủ đầu tiên (s), trục dọc là mất gói **trong từng kỳ** RR (%). Đường đứt cam là 5%. Các điểm nhảy từ 0% lên tới khoảng 13% giữa các giây liền nhau, và chỉ rơi vào các bậc rời rạc như đã tính ở trên.
+
+    **Ý chính:** tính trung bình cả phiên, RR đo mất gói rất đúng. Nhưng **một** RR đơn lẻ dao động mạnh, vì mỗi kỳ chỉ có khoảng 76 gói — mất 1 gói hay 10 gói trong kỳ đều có thể xảy ra ngẫu nhiên khi xác suất là 5%. Một bộ điều khiển đọc RR phải chịu được nhiễu này.
+
+    **Không chứng minh:** độ trễ một chiều, hay rằng phản hồi luôn đến nơi.
+
+### B9.7. Mất báo cáo nghĩa là gì?
+
+RR cũng đi bằng UDP, nên cũng có thể mất. Khi RR mất, máy gửi đơn giản là **không nhận được quan sát mới**. Điều đó **không** có nghĩa là mạng tốt. Một bộ điều khiển thiết kế đúng phải phân biệt "không có báo cáo" với "báo cáo nói mất 0%".
+
+Trong `sender.py`, chỉ khi một RR thật sự đến và có block mang đúng SSRC của mình thì `_apply_decision` mới chạy; không có RR thì không có quyết định nào. Khi bật `--abr aimd`, quyết định đó đổi **JPEG quality** và **tỉ lệ độ phân giải** của các ảnh sau (SOURCE: `sender.py`, `_apply_decision` gán `source.quality` và `resolution_scale`). Luật cụ thể của bộ điều khiển AIMD được dạy ở Session 2; ở đây chỉ cần nhớ: **RR là đầu vào, ảnh nhỏ hơn hoặc lớn hơn là đầu ra.** Thí nghiệm phần cứng CN-T8 cho vòng điều khiển này **chưa** được công bố là thành công.
+
+Về phân công: Mạnh chịu trách nhiệm tạo RR, Hiếu chịu trách nhiệm sử dụng RR.
+
+??? note "Đào sâu: RTT tính từ LSR và DLSR"
+    Pi gửi SR lúc nào thì ghi nhớ. Laptop nhận SR, giữ 32 bit giữa đồng hồ NTP của nó làm `lsr`, rồi khi gửi RR thì ghi thêm `dlsr` = thời gian nó đã giữ SR đó. Pi nhận RR lúc \(A\) và tính (SOURCE: `rtcp.py`, `rtt_ms`):
+
+    \[
+    \text{RTT}=A-\text{LSR}-\text{DLSR}\quad(\text{đơn vị }1/65536\text{ s})
+    \]
+
+    Ví dụ minh họa: \(A-\text{LSR}=6554\) đơn vị (≈100 ms) và \(\text{DLSR}=3277\) đơn vị (≈50 ms) thì \(\text{RTT}=3277\times1000/65536\approx50{,}0\) ms (CALCULATED). Cả \(A\) và LSR đều đọc trên **đồng hồ của Pi**, còn DLSR là một *khoảng* đo trên đồng hồ laptop, nên phép trừ không cần hai đồng hồ đồng bộ. RTT là thời gian khứ hồi; nó **không** bằng hai lần độ trễ một chiều trong mọi trường hợp, vì đường đi và đường về có thể khác nhau.
+
+??? note "Đào sâu: máy nhận chấp nhận một nguồn mới như thế nào?"
+    `rxstats.py` theo thuật toán RFC 3550 Appendix A.1: nguồn mới phải "thử việc" với `MIN_SEQUENTIAL = 2` gói liên tiếp trước khi được tính. Một bước nhảy sequence nhỏ hơn `MAX_DROPOUT = 3000` được coi là mất gói bình thường; bước nhảy lùi trong `MAX_MISORDER = 100` được coi là đảo thứ tự hoặc trùng; bước nhảy lớn bất thường bị nghi là nguồn khởi động lại và chỉ được chấp nhận nếu gói kế tiếp xác nhận. `cumulative_lost` bị kẹp vào dải 24 bit có dấu. (SOURCE.)
+
+<p class="key">Máy gửi không thấy mạng; nó chỉ biết qua RTCP Receiver Report mỗi giây: mất trong kỳ (fraction_lost/256), mất tích lũy, sequence cao nhất, jitter. RR đúng khi lấy trung bình nhưng nhiễu từng kỳ, và có thể mất — không có báo cáo không có nghĩa là mạng tốt.</p>
+
 ---
 
-## B10. Hàng đợi suy luận AI: Kiến trúc Producer–Consumer
+## B10. Hàng đợi trước AI: producer–consumer
 
-### B10.1. Mất cân bằng tốc độ sinh và tiêu thụ
-Sau khi qua bộ đệm playout, các frame hợp lệ (`status == "ok"`) được đưa vào hàng đợi suy luận của mô hình AI (`edge_ai.py`). Đây là bài toán **Producer–Consumer**:
-- Bên sản xuất (playout buffer): Tốc độ sinh frame \(\lambda\).
-- Bên tiêu thụ (AI worker thread): Tốc độ suy luận \(\mu = 1/T_s\).
+### B10.1. Vấn đề
 
-Khi \(\lambda > \mu\), hàng đợi tích lũy backlog. Xét trường hợp camera 30 FPS (\(\lambda = 30\text{ frame/s}\)) và tiến trình AI cần thời gian xử lý \(T_s = 56{,}7\text{ ms}\) (\(\mu \approx 17{,}6\text{ kết quả/s}\)):
-Mỗi giây có xấp xỉ \(30 - 17{,}6 = 12{,}4\text{ frame}\) dư thừa vượt quá năng lực phục vụ (CALCULATED). Hệ thống bắt buộc phải loại bỏ frame; chính sách quản lý hàng đợi quyết định frame nào bị loại bỏ.
+Đến đây, ảnh đã đến laptop, đã ghép đủ, đã qua hạn phát. Giờ nó được giao cho AI. Nhưng AI xử lý mỗi ảnh mất một khoảng thời gian. Nếu ảnh mới đến **nhanh hơn** AI xử lý, các ảnh phải xếp hàng chờ.
 
-### B10.2. So sánh chính sách FIFO và Latest-value
-Lớp `EdgeAI` hỗ trợ 2 chính sách với hàng đợi kích thước tối đa \(K = 8\) (`queue_size = 8`):
+Đây là mô hình **producer–consumer (bên sản xuất – bên tiêu thụ)**. Bên sản xuất (playout buffer) tạo ảnh với tốc độ \(\lambda\) ảnh mỗi giây. Bên tiêu thụ (AI) xử lý với tốc độ \(\mu\) ảnh mỗi giây. Giữa hai bên là một **hàng đợi (queue)**.
+
+### B10.2. Ví dụ đơn giản
+
+Ví dụ minh họa (giữ từ bài trước): ảnh đến 15 FPS, AI cần 100 ms mỗi ảnh.
+
+\[
+\lambda=15\ \text{ảnh/s},\qquad \mu=\frac{1}{T_s}=\frac{1}{0{,}1\ \text{s}}=10\ \text{ảnh/s}
+\]
+
+Vì \(\lambda>\mu\), mỗi giây có \(15-10=5\) ảnh không được xử lý kịp (CALCULATED). Nếu cứ giữ hết, hàng đợi dài thêm 5 ảnh mỗi giây cho tới khi đầy.
+
+Có hai cách giữ ảnh chờ:
+
+<table>
+<tr><th>Thời điểm</th><th>Sự kiện</th><th>FIFO (sức chứa 3)</th><th>Latest-value (giữ 1)</th></tr>
+<tr><td>t1</td><td>AI đang xử lý F1; F2 đến</td><td>[F2]</td><td>[F2]</td></tr>
+<tr><td>t2</td><td>F3 đến</td><td>[F2, F3]</td><td>[F3] — F2 bị bỏ</td></tr>
+<tr><td>t3</td><td>F4 đến</td><td>[F2, F3, F4]</td><td>[F4] — F3 bị bỏ</td></tr>
+<tr><td>t4</td><td>F5 đến</td><td>đầy → <b>F5 bị bỏ</b></td><td>[F5] — F4 bị bỏ</td></tr>
+<tr><td>t5</td><td>AI xong F1, lấy ảnh tiếp</td><td>lấy <b>F2</b> (cũ nhất)</td><td>lấy <b>F5</b> (mới nhất)</td></tr>
+</table>
+
+Ở cả hai cột, AI đều xử lý một ảnh mỗi lần, cùng tốc độ. Khác biệt duy nhất là **ảnh nào** được chọn. FIFO (First In, First Out — vào trước ra trước) chọn ảnh đã chờ lâu nhất, nên kết quả mô tả cảnh **của quá khứ**. Latest-value (giá trị mới nhất) chọn ảnh vừa đến, nên kết quả mô tả cảnh **gần hiện tại** nhất. Ảnh F1 đang xử lý không bao giờ bị cắt ngang.
+
+### B10.3. Trong dự án: `edge_ai.py`
+
+Lớp `EdgeAI` có **một** luồng xử lý AI và một hàng đợi `deque` sức chứa mặc định 8 (`queue_size=8`, SOURCE). Ảnh hoàn chỉnh đi vào bằng hàm `submit`:
 
 ```python
             if self.policy == "latest" and self._queue:
@@ -551,39 +962,65 @@ Lớp `EdgeAI` hỗ trợ 2 chính sách với hàng đợi kích thước tối
                 return False
             self._queue.append(job)
 ```
-*(SOURCE: `cn/rtp/rtp/edge_ai.py`)*
 
-- **FIFO (First-In First-Out):** Khi hàng đợi chưa đầy (\(< 8\)), frame mới được đẩy vào cuối hàng. Khi hàng đợi đã đầy 8 slot, **frame mới đến bị loại bỏ ngay lập tức** (`status = "skipped"`). AI luôn lấy frame cũ nhất ở đầu hàng. Hậu quả: frame phải chờ đợi qua 8 chu kỳ suy luận trước đó, làm tăng thời gian lưu hàng đợi.
-- **Latest-value:** Duy trì tối đa 1 phần tử chờ trong hàng đợi. Khi có frame mới đến trong lúc AI đang bận, frame đang chờ cũ hơn bị đẩy ra ngoài (`pop`) và đánh dấu `skipped` để nhường chỗ cho frame mới. AI luôn nhận frame mới nhất có thể.
+(SOURCE: `cn/rtp/rtp/edge_ai.py`, `EdgeAI.submit`.) Đọc bằng lời:
 
-<div class="widget" data-widget="queue" data-title="Khảo sát hàng đợi Producer–Consumer"></div>
+- **latest**: nếu đã có ảnh chờ, lấy ảnh chờ đó ra, ghi `skipped`, rồi đặt ảnh mới vào. Hàng đợi không bao giờ quá 1 ảnh chờ.
+- **fifo**: nếu đã có 8 ảnh chờ, **ảnh mới** bị ghi `skipped` và bỏ. Nếu chưa đầy, xếp vào cuối hàng.
 
-*Lưu ý quan trọng:* Cả hai chính sách đều có cùng thông lượng phục vụ tối đa \(\mu\). Chính sách latest-value **không làm AI chạy nhanh hơn**, mà chỉ tối ưu hóa việc chọn lựa dữ liệu mới nhất.
+Luồng AI (`_run`) luôn lấy ảnh ở **đầu** hàng (`popleft`), ghi `t_start_rx_ns`, chạy model, rồi gọi `send_result` để gửi gói RTCP APP "AIRS" về Pi. Mỗi ảnh để lại một dòng trong `ai.csv` với `t_enqueue_rx_ns`, `t_start_rx_ns`, `t_done_rx_ns` — ba mốc **trên đồng hồ laptop**. Thời gian chờ hàng đợi = `t_start_rx_ns − t_enqueue_rx_ns`.
 
-<p class="key">Khi tốc độ sinh vượt quá năng lực AI (λ > μ), hàng đợi buộc phải loại bỏ frame. FIFO giữ frame cũ và bỏ frame mới; Latest-value loại frame chờ cũ để ưu tiên frame mới nhất, giữ thời gian chờ ở mức tối thiểu.</p>
+Chế độ `--ai synthetic` không chạy mạng neural nào: `_SyntheticModel.infer` chỉ `time.sleep(service_ms/1000)` rồi trả `(0, 1.0)` (SOURCE). Nó giả lập một AI có thời gian xử lý biết trước, để thử hàng đợi một cách có kiểm soát.
 
-**Tự luyện**
+<div class="widget" data-widget="queue" data-title="So sánh tốc độ sinh và tốc độ xử lý"></div>
+
+**Trước khi thử:** đặt tốc độ sinh 15 ảnh/s và xử lý 10 ảnh/s. Với FIFO, thời gian chờ của ảnh mới nhất sẽ tăng mãi hay dừng ở một mức? Sau khi thử: nó tăng cho tới khi hàng đợi đầy, rồi **đứng ở mức cao** — mỗi ảnh vào được phải chờ gần đủ cả hàng phía trước được xử lý. Latest giữ thời gian chờ ngắn vì luôn có tối đa một ảnh chờ.
 
 **Bạn tự làm.** Nếu AI cần 50 ms mỗi ảnh và ảnh đến 30 FPS, \(\mu\) bằng bao nhiêu? Có quá tải không?
 
 ??? success "Xem đáp án"
     \(\mu=1/0{,}05=20\) ảnh/s; \(\lambda=30\) ảnh/s \(>\mu\), nên quá tải: mỗi giây 10 ảnh không thể được xử lý (CALCULATED). Chính sách hàng đợi không thay đổi con số 20 ảnh/s này; nó chỉ quyết định 20 ảnh nào được chọn.
 
+<p class="key">Khi ảnh đến nhanh hơn AI xử lý, hàng đợi đầy. FIFO bắt AI xử lý ảnh đã chờ lâu nhất; latest-value thay ảnh chờ bằng ảnh mới nhất. Cả hai có cùng năng lực xử lý — latest không làm AI nhanh hơn.</p>
+
 ---
 
-## B11. Độ tươi dữ liệu trong mạng: Phân tích Age of Information (AoI)
+## B11. Kết quả AI cũ đến mức nào? Latency và Age of Information
 
-### B11.1. Khái niệm Age of Information và đồ thị răng cưa
-Trong các hệ thống giám sát và điều khiển tự động, đại lượng **Latency** (đo thời gian hoàn thành của một frame riêng lẻ từ lúc chụp tới khi có kết quả: \(L_i = t_{\text{result},i} - t_{\text{capture},i}\)) không phản ánh được mức độ "tươi mới" liên tục của thông tin tại nút nhận.
+### B11.1. Vấn đề
 
-**Age of Information (AoI)** là biến ngẫu nhiên liên tục theo thời gian \(A(t)\), định nghĩa là khoảng thời gian trôi qua kể từ thời điểm phát sinh của mốc thông tin mới nhất đã tiếp nhận:
+Một hệ thống có thể chạy "đúng" — không lỗi, AI trả kết quả đều đặn — mà kết quả vẫn **lỗi thời**. Nếu kết quả bạn đang cầm mô tả một ảnh chụp từ 600 ms trước, mọi quyết định dựa trên nó đều dựa trên cảnh đã cũ.
+
+Ta cần một con số đo "kết quả mới nhất mình đang có cũ đến mức nào, tại mỗi thời điểm". Đó là **Age of Information (AoI — tuổi thông tin)**.
+
+### B11.2. Hai đại lượng khác nhau
+
+**Latency (độ trễ)** đo cho **từng** ảnh: từ lúc chụp đến lúc có kết quả của chính ảnh đó.
+
 \[
-A(t) = t - u(t)
+L_i=t_{\text{result},i}-t_{\text{capture},i}
 \]
-Trong đó \(u(t)\) là mốc thời gian chụp của kết quả AI mới nhất hiện có tại thời điểm \(t\).
-- Trong khoảng thời gian chờ giữa hai kết quả mới, \(u(t)\) không đổi, \(A(t)\) tăng tuyến tính với độ dốc bằng 1.
-- Khi một kết quả mới từ frame chụp lúc \(t_i\) cập bến, \(u(t)\) nhảy vọt lên \(t_i\), làm \(A(t)\) giảm tức thời về giá trị latency của frame đó (\(L_i\)).
-- Quỹ đạo của \(A(t)\) tạo thành đường **răng cưa (sawtooth)** đặc trưng.
+
+**AoI** đo tại **từng thời điểm** \(t\): lấy kết quả mới nhất đang có, xem ảnh của nó được chụp lúc nào (\(u(t)\)), rồi trừ:
+
+\[
+A(t)=t-u(t)
+\]
+
+Giữa hai lần có kết quả mới, \(u(t)\) đứng yên còn \(t\) tăng, nên \(A(t)\) **tăng đều** với độ dốc 1 (mỗi giây trôi qua, thông tin già thêm 1 giây). Khi một kết quả mới đến, \(u(t)\) nhảy lên thời điểm chụp của ảnh mới, nên \(A(t)\) **rơi xuống** đúng bằng latency của ảnh đó. Đồ thị có dạng **răng cưa (sawtooth)**.
+
+**AoI trung bình theo thời gian** là diện tích dưới đường răng cưa chia cho độ dài cửa sổ quan sát:
+
+\[
+\overline A=\frac{1}{T_1-T_0}\int_{T_0}^{T_1}A(t)\,dt
+\]
+
+### B11.3. Ví dụ: cùng số kết quả mỗi giây, tuổi rất khác nhau
+
+Ví dụ minh họa: trong cả hai trường hợp, AI trả một kết quả mỗi 100 ms (10 kết quả/s). Khác nhau ở latency của mỗi kết quả.
+
+- **Trường hợp A (giống latest):** mỗi kết quả có latency 100 ms.
+- **Trường hợp B (giống FIFO đầy hàng):** mỗi kết quả có latency 400 ms, vì ảnh đã chờ lâu trong hàng.
 
 <svg viewBox="0 0 720 260" width="100%" style="max-width:720px;display:block;margin:1rem auto;" role="img" aria-label="Đường răng cưa AoI cho hai trường hợp cùng tốc độ kết quả">
   <line x1="60" y1="220" x2="680" y2="220" stroke="currentColor"/>
@@ -604,23 +1041,34 @@ Trong đó \(u(t)\) là mốc thời gian chụp của kết quả AI mới nh�
   <line x1="60" y1="40" x2="660" y2="40" stroke="#F97316" stroke-dasharray="4 4"/>
   <text x="670" y="163" fill="#14B8A6" font-size="11">TB 150</text>
   <text x="670" y="43" fill="#F97316" font-size="11">TB 450</text>
-  <text x="160" y="125" text-anchor="middle" fill="currentColor" font-size="11">A (latest): latency 100 ms</text>
-  <text x="160" y="90" text-anchor="middle" fill="currentColor" font-size="11">B (FIFO): latency 400 ms</text>
-  <text x="360" y="205" text-anchor="middle" fill="currentColor" font-size="10">Cùng tần suất kết quả, đáy răng cưa thấp hơn quyết định độ tươi thông tin</text>
+  <text x="160" y="125" text-anchor="middle" fill="currentColor" font-size="11">A: latency 100 ms</text>
+  <text x="160" y="90" text-anchor="middle" fill="currentColor" font-size="11">B: latency 400 ms</text>
+  <text x="360" y="205" text-anchor="middle" fill="currentColor" font-size="10">mỗi cú rơi = một kết quả mới đến; độ dốc lên = 1</text>
 </svg>
 
-AoI trung bình theo thời gian trên cửa sổ \([T_0, T_1]\) là tích phân diện tích dưới đường răng cưa chia cho chiều dài cửa sổ:
-\[
-\overline{A} = \frac{1}{T_1 - T_0} \int_{T_0}^{T_1} A(t) \, dt \approx \bar{L} + \frac{\bar{T}}{2}
-\]
-Trong đó \(\bar{L}\) là độ trễ trung bình và \(\bar{T}\) là khoảng cách chu kỳ giữa hai lần cập nhật liên tiếp.
+**Tính tay trường hợp A** trên cửa sổ 200–500 ms (CALCULATED):
 
-<div class="widget" data-widget="aoi" data-title="Khảo sát đường răng cưa AoI và độ trễ"></div>
+- Ngay sau mỗi kết quả, tuổi = latency = 100 ms. Sau 100 ms không có gì mới, tuổi lên 200 ms. Rồi kết quả kế tiếp kéo nó về 100 ms.
+- Mỗi đoạn 100 ms là một hình thang có hai cạnh 100 và 200 ms: diện tích \(=\frac{100+200}{2}\times100=15\,000\ \text{ms}^2\).
+- Ba đoạn: \(3\times15\,000=45\,000\ \text{ms}^2\). Chia cho 300 ms: \(\overline A=150\) ms.
 
-### B11.2. Tính toán AoI trên đồng hồ phần cứng của Pi
-Trong hệ thống thực tế, AoI được tính toán **hoàn toàn khép kín trên đồng hồ monotonic của Pi** để triệt tiêu sai số lệch đồng hồ giữa các thiết bị. Pi ghi lại mốc chụp `t_capture_mono_ns` trong `sender.csv` và mốc nhận kết quả suy luận qua gói RTCP APP "AIRS" `t_result_rx_mono_ns` trong `results_tx.csv`.
+Nhận xét: \(\overline A=L+\frac{T}{2}\), với \(L\) là latency và \(T\) là khoảng giữa hai kết quả, khi cả hai đều không đổi.
 
-Hàm `area_aoi` tích lũy diện tích các hình thang (SOURCE: `cn/analysis/aoi.py`):
+**Bạn tự làm.** Tính \(\overline A\) cho trường hợp B.
+
+??? success "Xem đáp án"
+    Mỗi hình thang có hai cạnh 400 và 500 ms: \(\frac{400+500}{2}\times100=45\,000\ \text{ms}^2\); ba đoạn \(135\,000\ \text{ms}^2\); chia 300 ms ra \(\overline A=450\) ms (CALCULATED). Cùng 10 kết quả/s, nhưng tuổi trung bình gấp ba. **Đếm kết quả mỗi giây không cho biết kết quả có tươi hay không.**
+
+<div class="widget" data-widget="aoi" data-title="Đường răng cưa AoI: thử đổi latency và khoảng giữa kết quả"></div>
+
+**Trước khi thử:** giữ khoảng giữa hai kết quả cố định, tăng latency của mỗi kết quả lên. Đường răng cưa thay đổi ra sao? Sau khi thử: cả đường răng cưa **dịch lên** nguyên khối; răng không dài hơn, chỉ "đáy" cao hơn. Ngược lại, giãn khoảng giữa kết quả làm **răng dài ra**.
+
+### B11.4. Dự án tính AoI thế nào?
+
+Trong CN, AoI của kết quả AI được tính **hoàn toàn trên đồng hồ của Pi**. Pi biết thời điểm chụp (`t_capture_mono_ns` trong `sender.csv`) và thời điểm nhận gói AIRS mang kết quả (`t_result_rx_mono_ns` trong `results_tx.csv`). Ghép hai bảng theo `frame_id` cho ra các cặp (chụp, nhận kết quả) (SOURCE: `cn/rtp/analysis/metrics.py`, `_aoi_seconds`). Không có phép trừ nào giữa đồng hồ Pi và đồng hồ laptop.
+
+Rồi hàm `area_aoi` cộng diện tích từng hình thang, đúng như bạn vừa làm tay:
+
 ```python
         age = cursor - latest
         width = received - cursor
@@ -629,171 +1077,204 @@ Hàm `area_aoi` tích lũy diện tích các hình thang (SOURCE: `cn/analysis/a
         latest = max(latest, generated)
         cursor = received
 ```
-*(SOURCE: `cn/analysis/aoi.py`)*
 
-### B11.3. Bằng chứng thực nghiệm CN-T7 (FIFO vs Latest-value)
-Thí nghiệm CN-T7 chạy trực tiếp trên phần cứng với tải suy luận kiểm soát (`--ai synthetic`, thời gian xử lý giả lập đồng nhất, `--fps 30`), so sánh 5 lần chạy độc lập giữa 2 chính sách hàng đợi.
+(SOURCE: `cn/analysis/aoi.py`, `area_aoi`.) `age * width` là phần chữ nhật dưới hình thang; `width * width / 2` là phần tam giác do tuổi tăng với độ dốc 1. Dòng `latest = max(latest, generated)` đảm bảo một kết quả **cũ hơn** cái đang có (đến muộn) không làm thông tin "trẻ lại". Cửa sổ quan sát chạy từ lần chụp sớm nhất tới lần nhận kết quả muộn nhất.
+
+Đo latency và AoI trên cùng một đồng hồ là điều kiện để con số có nghĩa. Thời gian chờ hàng đợi thì đo trên đồng hồ laptop (`ai.csv`). Hai loại số này **không được trừ chéo** cho nhau.
+
+### B11.5. Kết quả CN-T7: FIFO so với latest-value
+
+**Câu hỏi của thí nghiệm:** khi AI chậm hơn tốc độ ảnh đến, đổi chính sách hàng đợi từ FIFO sang latest-value có làm kết quả tươi hơn không, và có làm giảm số kết quả không?
+
+**Điều kiện:** camera 30 FPS (SOURCE: `cn/rtp/configs/CN-T7.yaml`, `--fps 30`), AI là **synthetic service** chạy trên phần cứng — tức AI giả lập thời gian xử lý, không phải mạng neural thật (SOURCE: README gốc, "CN T7 uses synthetic service on hardware"). Mỗi chính sách chạy 5 lần. Thứ duy nhất thay đổi giữa hai cấu hình là chính sách hàng đợi.
 
 ![Kết quả FIFO so với latest-value ở CN-T7](../assets/fig/plots/07_fifo_latest.png)
 
+!!! example "Cách đọc hình"
+    **Panel trái — "Tuổi kết quả tại Pi":** trục ngang là chính sách hàng đợi, trục dọc là AoI trung bình theo thời gian (ms). FIFO cao 623, latest-value cao 204.
+
+    **Panel phải — tiêu đề "17.63 / 17.52 kết quả mỗi giây":** trục dọc là thời gian chờ hàng đợi, trung vị P50 (ms). FIFO 440,2 ms, latest-value 16,5 ms. Tiêu đề panel nhắc rằng số kết quả mỗi giây gần như bằng nhau.
+
+    **Ý chính:** cùng tốc độ xử lý, latest-value giữ kết quả tươi hơn khoảng ba lần. (MEASURED)
+
 <div class="metric-row">
 <div class="metric"><div class="m-label">Mean AoI (MEASURED, T7)</div><div class="m-value">623 → 204 ms</div><div class="m-sub">giảm 67,3% (CALCULATED)</div></div>
-<div class="metric"><div class="m-label">Queue wait P50 (MEASURED, T7)</div><div class="m-value">440,20 → 16,48 ms</div><div class="m-sub">đo trên đồng hồ laptop</div></div>
-<div class="metric"><div class="m-label">AI results/s (MEASURED, T7)</div><div class="m-value">17,63 → 17,52</div><div class="m-sub">thông lượng tương đương</div></div>
+<div class="metric"><div class="m-label">Queue wait P50 (MEASURED, T7)</div><div class="m-value">440,20 → 16,48 ms</div><div class="m-sub">đồng hồ laptop</div></div>
+<div class="metric"><div class="m-label">AI results/s (MEASURED, T7)</div><div class="m-value">17,63 → 17,52</div><div class="m-sub">gần như không đổi</div></div>
 </div>
 
-| Chỉ số đo lường | FIFO (8 slot) | Latest-value (1 slot) | Không gian đo |
-|:---|:---:|:---:|:---:|
-| **Mean AoI (Tuổi trung bình kết quả AI)** | **623 ms** | **204 ms** | Đồng hồ Pi |
-| Tốc độ kết quả phân phát | 17,63 kết quả/s | 17,52 kết quả/s | Đồng hồ Pi |
-| Số frame bị loại bỏ (`skipped`) | 802 frame | 809 frame | Laptop |
-| Thời gian chờ hàng đợi P50 / P95 | 440,20 / 461,57 ms | 16,48 / 31,53 ms | Đồng hồ Laptop |
-| Độ trễ Chụp \(\to\) Nhận kết quả P50 / P95 | 599,90 / 621,20 ms | 175,47 / 191,67 ms | Đồng hồ Pi |
-*(MEASURED, `cn/rtp/report/hw_tables.md`, trung bình qua 5 lần chạy)*
+Bảng đầy đủ (MEASURED, trung bình 5 lần chạy, `cn/rtp/report/hw_tables.md`):
 
-### B11.4. Phân tích nguyên lý cơ chế
-1. **Mức suy giảm AoI:**
-   \[
-   \frac{623 - 204}{623} = \frac{419}{623} \approx 67{,}26\% \implies \mathbf{67{,}3\%}\quad (\text{CALCULATED})
-   \]
-2. **Bảo toàn thông lượng:** Tốc độ kết quả đạt 17,63 so với 17,52 kết quả/s (chênh lệch dưới 0,6%). Do AI worker chỉ chạy đơn luồng và thời gian phục vụ mỗi tác vụ là cố định, năng lực xử lý bão hòa hoàn toàn độc lập với chính sách điều phối hàng đợi.
-3. **Cơ chế giảm trễ hàng đợi:** Hàng đợi FIFO tích tụ tối đa 8 frame. Một frame đi vào phải đợi 8 tác vụ phía trước hoàn thành: \(8 \times (1 / 17{,}63\text{ s}) \approx 8 \times 56{,}7\text{ ms} \approx 453{,}6\text{ ms}\) (CALCULATED), khớp sát với giá trị đo thực nghiệm P50 = 440,20 ms. Trong khi đó, Latest-value loại bỏ thời gian xếp hàng chờ đợi, hạ P50 xuống còn 16,48 ms.
-4. **Kiểm chứng xấp xỉ giải tích:**
-   - FIFO: \(\overline{A} \approx \bar{L} + \bar{T}/2 = 599{,}90 + 28{,}4 \approx 628{,}3\text{ ms}\) (so với thực nghiệm 623 ms).
-   - Latest: \(\overline{A} \approx 175{,}47 + 28{,}5 \approx 204{,}0\text{ ms}\) (khớp chính xác 204 ms thực nghiệm).
+| Đại lượng | FIFO | Latest-value | Đồng hồ |
+|---|---|---|---|
+| AoI trung bình của kết quả AI | 623 ms | 204 ms | Pi |
+| Số kết quả mỗi giây | 17,63 | 17,52 | Pi |
+| Số ảnh bị bỏ (`skipped`, trung bình mỗi lần chạy) | 802 | 809 | laptop |
+| Chờ hàng đợi P50 / P95 | 440,20 / 461,57 ms | 16,48 / 31,53 ms | laptop |
+| Chụp → kết quả P50 / P95 | 599,90 / 621,20 ms | 175,47 / 191,67 ms | Pi |
 
-### B11.5. Giới hạn đánh giá khoa học
-- Kết quả CN-T7 sử dụng tải suy luận giả lập (`synthetic service`), chưa phản ánh biến động thời gian thực thi của mạng nơ-ron MobileNetV2 thật dưới hiện tượng nghẽn bộ nhớ đệm hay thay đổi tần số CPU.
-- Chính sách Latest-value tối ưu cho nhận thức điều khiển tức thời; không phù hợp cho các bài toán yêu cầu xử lý chuỗi liên tục (như theo dõi đếm vật thể hoặc trích xuất quỹ đạo quang học).
+**Mức giảm AoI** (CALCULATED): \(\dfrac{623-204}{623}=\dfrac{419}{623}=0{,}673\), tức **67,3%**.
 
-<p class="key">CN-T7 chứng minh: chuyển từ FIFO sang Latest-value giảm 67,3% AoI (từ 623 xuống 204 ms) nhờ triệt tiêu thời gian lưu hàng đợi (440 ms xuống 16 ms), trong khi bảo toàn 100% thông lượng suy luận.</p>
+### B11.6. Giải thích bằng cơ chế
+
+**Vì sao số kết quả mỗi giây gần như không đổi?** Vì AI chỉ có một luồng và thời gian xử lý mỗi ảnh như nhau trong cả hai cấu hình. Năng lực xử lý quyết định số kết quả; chính sách hàng đợi không làm AI nhanh hơn hay chậm hơn.
+
+**Vì sao cả hai đều bỏ khoảng 800 ảnh?** Vì ảnh đến (30/s) nhiều hơn AI xử lý được (khoảng 17,6/s). Phần dư *buộc phải* bỏ, chỉ khác **ảnh nào** bị bỏ: FIFO bỏ ảnh **mới đến** khi hàng đầy; latest bỏ ảnh **đang chờ** để nhường chỗ cho ảnh mới hơn.
+
+**Vì sao FIFO chờ tới 440 ms?** Hàng FIFO đầy 8 ảnh. Một ảnh vào được hàng phải đợi gần đủ 8 ảnh phía trước được xử lý. Ước lượng (CALCULATED, giả sử AI luôn bận): mỗi kết quả cách nhau khoảng \(1/17{,}63\approx56{,}7\) ms, nên 8 ảnh ≈ \(8\times56{,}7\approx454\) ms — cùng cỡ với 440 ms đo được.
+
+**Kiểm tra chéo với công thức răng cưa.** Ở B11.3 ta có \(\overline A\approx L+T/2\). Lấy \(L\) bằng latency trung vị và \(T\approx56{,}7\) ms (CALCULATED, phép xấp xỉ): FIFO \(599{,}90+28{,}4\approx628\) ms so với 623 ms đo được; latest \(175{,}47+28{,}5\approx204\) ms so với 204 ms đo được. Công thức đơn giản giải thích được gần hết con số đo.
+
+**Vì sao latest vẫn còn 175 ms latency?** Hàng đợi chỉ là một phần. Mỗi ảnh còn phải qua mạng, chờ playout, và được AI xử lý. Bảng T7 không tách riêng từng phần này, nên ta không gán con số cụ thể cho từng khâu ở đây.
+
+### B11.7. Điều kết quả này KHÔNG chứng minh
+
+- **Không** chứng minh AI thật (MobileNetV2) sẽ giảm đúng 67,3%. T7 dùng synthetic service; với thời gian xử lý khác, mức giảm sẽ khác.
+- **Không** chứng minh latest-value luôn tốt hơn. Nếu ứng dụng cần xử lý **mọi** ảnh (ví dụ đếm vật thể qua từng khung), bỏ ảnh là không chấp nhận được.
+- **Không** nói gì về độ chính xác nhận diện; T7 không đo accuracy.
+- AoI ở đây đo tới lúc **Pi nhận được kết quả**, gồm cả đường AIRS quay về — không phải tới lúc AI tính xong trên laptop.
+
+<p class="key">Latency đo một ảnh; AoI đo độ cũ của kết quả mới nhất tại mỗi thời điểm và lấy trung bình theo thời gian. CN-T7 (MEASURED, synthetic service): latest-value giảm AoI trung bình từ 623 xuống 204 ms (−67,3%) trong khi số kết quả mỗi giây gần như giữ nguyên (17,63 so với 17,52).</p>
 
 ---
 
-## B12. Tổng kết đường ống dữ liệu: Vòng đời của Frame 0
+## B12. Tổng kết: đi theo một ảnh từ đầu đến cuối
 
-| Giai đoạn | Module thực thi | Dữ liệu đầu vào | Thao tác kỹ thuật chính | Dữ liệu đầu ra |
-|:---:|:---|:---|:---|:---|
-| **1. Capture** | `sources.py` | Luồng cảm biến | Chụp ảnh, nén JPEG, gán mốc `t_capture_mono_ns` | 1 frame 6100 B |
-| **2. Packetize** | `sender.py`, `payload.py` | Frame JPEG 6100 B | Quy đổi mốc chụp sang timestamp 90 kHz; phân rã thành 6 fragment với offset tích lũy | 6 packet RTP (seq 31318–31323, chung TS 1546568660) |
-| **3. Truyền tải** | Socket UDP 5004 | 6 packet IP 1240 B | Truyền qua kênh mạng IP/UDP (chịu suy hao netem) | Các packet đến đích |
-| **4. Ingress RX** | `receiver.py`, `rxstats.py` | Packet thu nhận | Thẩm định PT 96 và SSRC; theo dõi sequence mở rộng; cập nhật jitter RFC 3550 | Chuyển fragment vào bộ đệm |
-| **5. Playout** | `playout.py`, `payload.py` | Tập hợp fragment | Ghép mảng byte theo offset; tính hạn phát \(d_i = t_0 + \Delta TS/90000 + B\); phân loại `ok`/`late`/`lost` | Frame hoàn chỉnh tại hạn phát \(d_i\) |
-| **6. Dispatch AI** | `edge_ai.py` | Frame `ok` | Điều phối qua hàng đợi (FIFO giữ tối đa 8; Latest giữ frame mới nhất) | Job suy luận cho worker |
-| **7. Inference** | `edge_ai.py` | Dữ liệu ảnh JPEG | Chạy mô hình (Synthetic / ONNX); đóng gói kết quả vào RTCP APP "AIRS" phát về Pi | Kết quả nhận diện |
-| **8. Egress Pi** | `sender.py` | Gói RTCP APP | Ghép cặp theo `frame_id`, tính toán độ trễ Latency và tích phân hàm AoI trên đồng hồ Pi | Báo cáo hiệu năng |
-| **Phản hồi** | `rxstats.py` \(\to\) RTCP 5005 | Thống kê tiếp nhận | Đóng gói Receiver Report 24 B mỗi 1 giây (`fraction_lost`, jitter, LSR/DLSR) | Giám sát chất lượng mạng |
+Hãy theo frame 0 của B4 qua toàn bộ đường ống. Bảng này là "bản đồ" để bạn kể lại trong buổi bảo vệ.
+
+| Bước | Khối (file) | Cái gì vào | Khối làm gì | Cái gì ra |
+|---|---|---|---|---|
+| 1 | Nguồn ảnh (`sources.py`) | Ảnh chụp | Nén JPEG, ghi `t_capture_mono_ns` | 1 frame 6100 B |
+| 2 | Sender (`sender.py`) | Frame | Đổi giờ chụp thành timestamp 90 kHz; gọi `fragment_jpeg` | 6 gói RTP, seq 31318–31323, cùng timestamp |
+| 3 | Mạng (UDP) | 6 gói | Có thể mất, trễ, đảo thứ tự | 0–6 gói đến laptop |
+| 4 | Receiver (`receiver.py`, `rxstats.py`) | Từng gói | Kiểm PT 96 và SSRC; đếm sequence; cập nhật jitter | Gói chuyển vào playout |
+| 5 | Playout (`playout.py`, `payload.py`) | Các mảnh | Ghép theo offset; tính hạn phát; phân loại ok/late/lost | Ảnh `ok` đúng lúc hạn phát |
+| 6 | Hàng đợi AI (`edge_ai.py`) | Ảnh ok | FIFO hoặc latest | Ảnh được chọn cho AI |
+| 7 | AI (`edge_ai.py`) | Ảnh | Synthetic hoặc ONNX | Kết quả → gói AIRS về Pi |
+| 8 | Pi (`sender.py`) | AIRS | Ghép với giờ chụp cùng `frame_id`, `rtp_ts` | Latency, AoI trên đồng hồ Pi |
+| song song | RTCP RR mỗi 1 s | Thống kê ở bước 4 | Báo mất gói, jitter về Pi | Đầu vào cho AIMD (nếu bật) |
 
 ---
 
-## Trắc nghiệm kiểm tra hiểu biết
+## Trắc nghiệm
 
 <div class="quiz" markdown>
-<p class="quiz-q">Các packet phân mảnh sinh ra từ cùng một frame video chia sẻ chung trường thông tin nào trong RTP header?</p>
+<p class="quiz-q">Hai packet thuộc một frame có trường nào thường giống nhau?</p>
 
-- [ ] Sequence number
-- [x] RTP Timestamp
-- [ ] Cờ Marker luôn bằng 1
-- [ ] Payload offset
+- [ ] Sequence
+- [x] RTP timestamp
+- [ ] Marker luôn bằng 1
+- [ ] Byte offset
 
 <div class="quiz-why" markdown>
-Tất cả các packet thuộc cùng một frame xuất phát từ cùng một thời điểm lấy mẫu media, do đó mang cùng giá trị RTP Timestamp. Sequence number tăng liên tục để định danh từng packet riêng biệt, Payload offset thay đổi theo vị trí byte trong ảnh, và cờ Marker chỉ tích cực (bằng 1) duy nhất tại packet cuối cùng.
+Cùng một thời điểm lấy mẫu media nên cùng RTP timestamp. Sequence và byte offset phân biệt từng mảnh. Marker chỉ bằng 1 ở mảnh cuối, nên "marker luôn bằng 1" là sai.
 </div>
 </div>
 
 <div class="quiz" markdown>
-<p class="quiz-q">Tăng độ sâu bộ đệm playout (B) lên giá trị rất lớn có thể khôi phục được packet bị mất trên đường truyền mạng không?</p>
+<p class="quiz-q">Buffer lớn có sửa được packet bị mất không?</p>
 
-- [ ] Có, vì bộ đệm lớn giúp tăng bitrate và độ nhạy của bộ thu
-- [ ] Có, vì bộ đệm kích hoạt cơ chế tự sửa sai CRC ở tầng mạng
-- [x] Không, bộ đệm chỉ kéo dài thời gian chờ các packet bị trễ, không thể bù đắp packet đã bị mạng drop
-- [ ] Có, vì giao thức RTCP sẽ tự động gửi lại toàn bộ dữ liệu JPEG bị thiếu
+- [ ] Có, vì tăng bitrate
+- [ ] Có, vì sửa CRC
+- [x] Không, chỉ cho thêm thời gian chờ packet đến
+- [ ] Có, vì RTCP gửi JPEG thay thế
 
 <div class="quiz-why" markdown>
-Bộ đệm playout chỉ cung cấp thời gian chờ để hấp thụ độ dao động trễ (jitter) cho các packet còn đang trên đường truyền. Hệ thống sử dụng UDP không có cơ chế truyền lại packet, và RTCP chỉ là giao thức điều khiển trao đổi dữ liệu thống kê, không mang payload ảnh.
+Chờ chỉ giúp packet còn đang đi trên mạng. Sản phẩm không gửi lại gói RTP, và RTCP chỉ mang thống kê, không mang ảnh.
 </div>
 </div>
 
 <div class="quiz" markdown>
-<p class="quiz-q">Một hệ thống nhận luồng frame ở tốc độ 15 FPS và luồng AI xử lý với thời gian phục vụ trung bình Ts = 100 ms. Đánh giá trạng thái hàng đợi?</p>
+<p class="quiz-q">15 frame/s, service 100 ms. Kết luận?</p>
 
-- [ ] Consumer có tốc độ xử lý đạt 100 frame/s
-- [ ] Hàng đợi FIFO bảo đảm không bao giờ xảy ra hiện tượng đầy hàng
-- [x] Tốc độ tiêu thụ μ = 10 frame/s nhỏ hơn tốc độ sinh λ = 15 frame/s; hàng đợi chắc chắn bị quá tải backlog
-- [ ] Chính sách Latest-value giúp tăng tốc độ xử lý của CPU lên 15 frame/s
+- [ ] Consumer xử lý 100 frame/s
+- [ ] FIFO chắc chắn không đầy
+- [x] Consumer 10 frame/s, có nguy cơ backlog
+- [ ] Latest tăng tốc độ CPU
 
 <div class="quiz-why" markdown>
-Tốc độ tiêu thụ là \(\mu = 1/T_s = 1/0{,}1\text{ s} = 10\text{ frame/s}\). Do \(\lambda = 15 > \mu = 10\), hàng đợi tích lũy dư thừa 5 frame mỗi giây dẫn tới tràn đệm. Latest-value chỉ thay đổi chiến lược chọn lựa dữ liệu chờ, hoàn toàn không làm thay đổi năng lực tính toán phần cứng của CPU.
+\(\mu=1/0{,}1=10\) frame/s < 15 frame/s: consumer chậm hơn producer. Lựa chọn "100 frame/s" nhầm 100 ms thành tốc độ. Latest thay chính sách chờ chứ không tăng năng lực tính toán.
 </div>
 </div>
 
 <div class="quiz" markdown>
-<p class="quiz-q">Bên nhận đã tiếp nhận được packet có cờ Marker = 1 và đầy đủ các packet khác, nhưng bị thất lạc packet đầu tiên (frag_offset = 0). Frame ảnh có được ghép thành công không?</p>
+<p class="quiz-q">RR dùng để làm gì?</p>
 
-- [ ] Thành công, vì cờ Marker = 1 xác nhận toàn bộ quá trình truyền frame đã kết thúc
-- [ ] Thành công, nếu tổng số packet nhận được bằng N - 1
-- [x] Thất bại, vì thiếu packet đầu tiên đồng nghĩa với việc không có total_length và thiếu mảng dữ liệu byte từ 0
-- [ ] Thất bại, vì theo quy chuẩn cờ Marker bắt buộc phải nằm ở packet đầu tiên
+- [ ] Mang toàn bộ ảnh JPEG
+- [x] Cung cấp thống kê tiếp nhận cho sender
+- [ ] Thay tất cả các RTP packet
+- [ ] Đo trực tiếp chính xác độ trễ một chiều
 
 <div class="quiz-why" markdown>
-Theo thuật toán trong `FrameReassembler`, frame chỉ hoàn chỉnh khi biết `total_length` (chỉ mang trong packet đầu), biết điểm kết thúc `marker_end` (packet marker) và các fragment phủ kín liên tục từ byte 0. Cờ Marker chỉ đánh dấu biên kết thúc của frame, không bảo đảm tính toàn vẹn của các byte phía trước.
+RR là đường phản hồi mang fraction lost, cumulative lost, extended highest sequence, jitter, LSR/DLSR. Nó không chứa ảnh. Từ LSR/DLSR chỉ tính được RTT khứ hồi, không phải độ trễ một chiều, vì hai máy không chung đồng hồ.
 </div>
 </div>
 
 <div class="quiz" markdown>
-<p class="quiz-q">Trên panel trái của biểu đồ metadata RTP, tại sao packet thứ 6 (seq 31323) chỉ có kích thước 164 byte trong khi 5 packet trước đó đều dài 1212 byte?</p>
+<p class="quiz-q">Máy nhận đã có gói marker = 1 của một ảnh và mọi gói trừ gói đầu tiên. Ảnh có hoàn chỉnh không?</p>
+
+- [ ] Có, vì marker báo ảnh đã kết thúc
+- [ ] Có, nếu số gói nhận được bằng 5
+- [x] Không, vì thiếu mảnh đầu nên thiếu byte 0 và thiếu chiều dài tổng
+- [ ] Không, vì marker phải nằm ở gói đầu
+
+<div class="quiz-why" markdown>
+`FrameReassembler` chỉ trả ảnh khi biết chiều dài tổng (chỉ mảnh đầu mang `total_length`), biết điểm kết thúc (mảnh marker) và các mảnh nối liền từ byte 0. Đáp án "marker báo kết thúc" là hiểu lầm phổ biến nhất: marker cho biết *ảnh kết thúc ở đâu*, không cho biết *đã đủ mảnh*.
+</div>
+</div>
+
+<div class="quiz" markdown>
+<p class="quiz-q">Trên panel trái của hình, frame 0 có sáu gói. Vì sao gói cuối chỉ 164 byte?</p>
 
 ![Metadata RTP: sáu mảnh của một frame](../assets/fig/plots/01_rtp_metadata.png)
 
-- [ ] Vì packet cuối bị cắt bớt một phần dữ liệu khi truyền qua mạng UDP
-- [x] Vì nó chỉ mang phần dữ liệu JPEG còn lại (144 B) cộng với header mảnh 8 B và header RTP 12 B
-- [ ] Vì packet có cờ marker luôn được nén ở tỷ lệ chất lượng cao hơn
-- [ ] Vì header RTP của packet cuối cùng được rút gọn xuống còn 4 byte
+- [ ] Vì gói cuối bị mất một phần trên mạng
+- [x] Vì nó chỉ chứa phần JPEG còn lại (144 B) cộng header
+- [ ] Vì gói marker luôn được nén mạnh hơn
+- [ ] Vì RTP header của gói cuối ngắn hơn
 
 <div class="quiz-why" markdown>
-Frame ảnh có dung lượng 6100 B. Năm packet đầu đã chứa \(1188 + (4 \times 1192) = 5956\text{ B}\) JPEG. Phần dư còn lại là \(6100 - 5956 = 144\text{ B}\). Khi đóng gói: \(144\text{ (JPEG)} + 8\text{ (fragment header)} + 12\text{ (RTP fixed header)} = 164\text{ byte}\). Kênh truyền UDP không làm mất một phần gói tin; header RTP luôn cố định 12 byte.
+Năm gói đầu đã chứa \(1188+4\times1192=5956\) B; ảnh 6100 B chỉ còn 144 B cho gói cuối, cộng 8 B header mảnh và 12 B RTP header ra 164 B. UDP không làm "mất một phần" gói — hoặc cả gói đến, hoặc mất hẳn. RTP header luôn 12 B.
 </div>
 </div>
 
 <div class="quiz" markdown>
-<p class="quiz-q">Trong bài đo thực nghiệm CN-T4 (jitter cấu hình 20 ms), việc tăng độ sâu bộ đệm B từ 100 ms lên 200 ms đem lại kết quả kỹ thuật gì?</p>
+<p class="quiz-q">Ở CN-T4 (jitter cấu hình 20 ms), tăng độ sâu bộ đệm từ 100 ms lên 200 ms đem lại gì?</p>
 
 ![Trade-off độ trễ và tỉ lệ frame muộn](../assets/fig/plots/03_playout_tradeoff.png)
 
-- [ ] Giảm tỷ lệ frame muộn (late) từ 14,3% xuống 0%
-- [ ] Không làm thay đổi bất kỳ chỉ số hiệu năng nào của hệ thống
-- [x] Không giảm thêm tỷ lệ frame muộn (đã đạt 0% tại 100 ms), nhưng làm tăng trễ P50 thêm gần 100 ms
-- [ ] Giúp giảm độ trễ P50 vì bộ đệm lớn giúp tăng tốc độ giải mã
+- [ ] Giảm tỉ lệ ảnh muộn từ 14,3% xuống 0%
+- [ ] Không đổi gì cả
+- [x] Không giảm thêm ảnh muộn (đã 0%), nhưng tăng trễ P50 khoảng 100 ms
+- [ ] Giảm độ trễ vì bộ đệm lớn chứa được nhiều ảnh hơn
 
 <div class="quiz-why" markdown>
-Ở \(B = 100\text{ ms}\), tỷ lệ frame trượt deadline đã triệt tiêu hoàn toàn về 0,0%. Tăng tiếp \(B\) lên 200 ms vẫn duy trì 0,0% frame muộn nhưng làm trễ P50 tăng từ 117,68 ms lên 216,61 ms (tăng thêm 98,93 ms, MEASURED). Bộ đệm lớn hơn luôn giữ frame lâu hơn trước khi phát nên không thể làm giảm độ trễ.
+Ở 100 ms tỉ lệ muộn đã là 0%; ở 200 ms vẫn 0% nhưng P50 từ 117,68 lên 216,61 ms (MEASURED). Con số 14,3% là của \(D\)=50 ms, không phải 100 ms. Bộ đệm lớn hơn luôn giữ ảnh lâu hơn, nên không thể làm giảm độ trễ.
 </div>
 </div>
 
 <div class="quiz" markdown>
-<p class="quiz-q">Tại thí nghiệm CN-T7, thông lượng kết quả AI gần như không đổi (17,63 so với 17,52 kết quả/s) nhưng AoI trung bình giảm từ 623 ms xuống 204 ms. Kết luận nào phản ánh đúng bản chất?</p>
+<p class="quiz-q">Ở CN-T7, số kết quả mỗi giây gần như không đổi (17,63 so với 17,52) nhưng AoI giảm từ 623 xuống 204 ms. Cách giải thích nào đúng?</p>
 
 ![FIFO so với latest-value](../assets/fig/plots/07_fifo_latest.png)
 
-- [ ] Chính sách Latest-value giúp tăng tốc độ suy luận của mô hình AI
-- [ ] Chính sách Latest-value loại bỏ ít frame hơn so với chính sách FIFO
-- [x] Do thông lượng xử lý bão hòa như nhau, Latest-value loại bỏ frame chờ cũ để chọn frame mới nhất, triệt tiêu thời gian lưu hàng đợi
-- [ ] Hàng đợi FIFO gặp sự cố lỗi phần mềm khiến frame bị xử lý sai thứ tự
+- [ ] Latest-value làm AI chạy nhanh hơn
+- [ ] Latest-value bỏ ít ảnh hơn FIFO
+- [x] Cùng năng lực xử lý, latest chọn ảnh mới nhất nên mỗi kết quả mô tả cảnh gần hiện tại hơn
+- [ ] FIFO bị lỗi nên trả kết quả sai
 
 <div class="quiz-why" markdown>
-Năng lực xử lý của AI là cố định (thời gian phục vụ như nhau ở cả hai cấu hình). Số lượng frame bị drop tương đương nhau (FIFO bỏ 802, Latest bỏ 809 frame). Điểm khác biệt cốt lõi là Latest-value thay thế frame chờ cũ bằng frame mới nhất, giảm thời gian chờ hàng đợi từ 440,2 ms xuống 16,5 ms, giúp mỗi kết quả chuyển giao có độ tươi cao hơn gấp 3 lần.
+AI có cùng tốc độ trong cả hai cấu hình (nên số kết quả mỗi giây gần bằng nhau). Latest cũng bỏ khoảng 800 ảnh như FIFO (809 so với 802) — khác ở *ảnh nào* bị bỏ. Chờ hàng đợi giảm từ 440 xuống 16 ms nên mỗi kết quả "trẻ" hơn. FIFO không lỗi; nó chỉ phục vụ ảnh cũ trước.
 </div>
 </div>
 
----
+## Câu thầy có thể hỏi
 
-## Câu thầy có thể hỏi khi bảo vệ
+??? question "Mạng mất 5% gói mà sao nhóm em mất tới 24% ảnh? Có phải code ghép ảnh có lỗi không?"
+    "Thưa thầy, không phải lỗi ạ. Mỗi ảnh khoảng 6 nghìn byte, được cắt thành trung bình 5,1 gói, và thiếu bất kỳ gói nào thì ảnh không giải mã được. Nếu mỗi gói mất độc lập với xác suất 5,2% như bọn em đo được, xác suất cả 5,1 gói cùng đến là 0,948 mũ 5,106, khoảng 76%, tức mất khoảng 23,9% ảnh. Đo thật là 24,0%, khớp với công thức. Điều này cho thấy mất ảnh là hệ quả của việc chia ảnh thành nhiều gói, chứ không phải do bộ ghép. Muốn giảm thì phải giảm số gói mỗi ảnh hoặc giảm mất gói, đó là động cơ cho bộ điều khiển thích nghi ở Session 2."
 
-??? question "Tại sao mạng chỉ mất 5,2% packet mà hệ thống lại mất tới 24,0% frame ảnh? Có phải thuật toán ghép frame bị lỗi không?"
-    "Thưa thầy, đây là hệ quả toán học tất yếu của cơ chế phân mảnh, hoàn toàn không phải lỗi phần mềm. Một frame ảnh JPEG kích thước khoảng 6100 byte vượt quá MTU nên bắt buộc phải cắt thành trung bình 5,106 packet. Do ảnh JPEG cần toàn vẹn dữ liệu để giải mã, chỉ cần mất bất kỳ 1 packet nào là toàn bộ frame bị hủy. Theo mô hình xác suất mất độc lập, tỷ lệ frame thành công là \((1 - p)^N = (1 - 0{,}052)^{5{,}106} \approx 76{,}1\%\), tương ứng tỷ lệ mất frame lý thuyết là \(23{,}9\%\). Số liệu thực nghiệm đo đạc thực tế của nhóm đạt đúng 24,0%, hoàn toàn khớp với mô hình giải tích. Để giảm thiểu tổn thất này, hệ thống cần cơ chế điều khiển thích nghi bitrate (AIMD) để giảm kích thước ảnh khi mạng suy hao."
+??? question "Em nói receiver đặt hạn phát theo timestamp. Sao không đơn giản là giờ đến cộng 100 ms?"
+    "Dạ, nếu lấy giờ đến cộng 100 ms thì mọi dao động của mạng vẫn còn nguyên, chỉ bị dời đi 100 ms. Ví dụ hai ảnh đến cách nhau 105 ms thì cũng được phát cách nhau 105 ms, video vẫn giật. Bọn em lấy gói đầu tiên làm mốc neo, rồi hạn phát của mỗi ảnh bằng mốc neo cộng khoảng timestamp chia 90 nghìn cộng độ sâu bộ đệm. Như vậy hai ảnh liên tiếp luôn có hạn phát cách nhau đúng 66,67 ms theo nhịp camera; dao động nào nhỏ hơn độ sâu bộ đệm thì được hấp thụ, còn ảnh đến sau hạn thì bị ghi là late."
 
-??? question "Tại sao receiver không đặt hạn phát đơn giản bằng mốc 'thời điểm nhận + 100 ms' mà phải tính toán phức tạp qua RTP timestamp 90 kHz?"
-    "Thưa thầy, nếu đặt hạn phát bằng thời điểm nhận cộng độ sâu bộ đệm, toàn bộ biến thiên jitter của mạng truyền dẫn sẽ bị chuyển dịch nguyên vẹn sang ứng dụng nhận, khiến các frame phát ra bị giật cục không đều. Nhóm sử dụng packet đầu tiên để chốt mốc neo thời gian (\(t_0, TS_0\)), sau đó tính hạn phát theo công thức \(d_i = t_0 + (TS_i - TS_0)/90000 + B\). Do timestamp media được sinh theo chu kỳ camera đều đặn của sender, khoảng cách hạn phát giữa các frame liên tiếp luôn bảo toàn chính xác chu kỳ 66,67 ms (ở 15 FPS). Cách làm này hấp thụ triệt để mọi dao động trễ nhỏ hơn độ sâu bộ đệm \(B\) và tái tạo nhịp hiển thị mượt mà cho tầng xử lý tiếp theo."
-
-??? question "Bản chất của Latest-value chỉ là vứt bỏ bớt frame trong hàng đợi. Tại sao nhóm lại khẳng định đây là cải tiến quan trọng?"
-    "Thưa thầy, khi tốc độ sinh frame của camera (30 FPS) vượt quá năng lực xử lý của mô hình AI (\(\approx 17{,}6\text{ kết quả/s}\)), hàng đợi chắc chắn bị tràn và việc hủy frame là bắt buộc về mặt toán học. Trên thực tế, cả hai chính sách đều hủy số lượng frame tương đương nhau (FIFO bỏ 802 frame, Latest bỏ 809 frame trên toàn bài đo). Điểm khác biệt là FIFO giữ lại frame cũ đã xếp hàng, khiến mỗi frame phải chịu trễ hàng đợi tích lũy lên tới 440 ms; trong khi Latest-value hủy frame chờ cũ để ưu tiên frame mới nhất vừa tới, hạ thời gian chờ xuống chỉ còn 16,5 ms. Kết quả là Age of Information trung bình giảm từ 623 ms xuống 204 ms (giảm 67,3%) mà không làm suy giảm bất kỳ phần trăm thông lượng nào của AI. Đối với bài toán điều khiển robot, thông tin nhận thức mới nhất quan trọng hơn nhiều so với việc xử lý tuần tự dữ liệu quá khứ."
+??? question "Latest-value chỉ là vứt bớt ảnh đi. Sao em gọi đó là cải tiến?"
+    "Thưa thầy, khi AI chậm hơn tốc độ ảnh đến thì kiểu gì cũng phải bỏ ảnh — trong CN-T7, FIFO cũng bỏ 802 ảnh, latest bỏ 809 ảnh, gần bằng nhau. Câu hỏi chỉ là bỏ ảnh nào. FIFO giữ ảnh cũ trong hàng và bỏ ảnh mới đến, nên mỗi ảnh phải chờ khoảng 440 ms trước khi được xử lý. Latest bỏ ảnh đang chờ và giữ ảnh mới nhất, nên chờ chỉ khoảng 16 ms. Kết quả là tuổi trung bình của kết quả AI tại Pi giảm từ 623 xuống 204 ms, trong khi số kết quả mỗi giây gần như không đổi. Tuy vậy em xin nói rõ giới hạn: thí nghiệm dùng AI giả lập thời gian xử lý, chưa đo với mạng neural thật, và nếu ứng dụng cần xử lý mọi ảnh thì latest không phù hợp."
