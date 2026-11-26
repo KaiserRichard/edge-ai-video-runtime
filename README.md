@@ -7,6 +7,8 @@ an STM32 FreeRTOS supervisor tracks result freshness over UART. A Python
 dashboard replays retained CN evidence without hardware. AI inference is the
 workload; this project does not introduce a new neural network or prove safety.
 
+Team study site (Vietnamese): <https://kaiserrichard.github.io/edge-ai-video-runtime/>
+
 This repository extends [heterogeneous-edge-ai-os](https://github.com/KaiserRichard/heterogeneous-edge-ai-os),
 where the original OS pipeline, supervisor and OS experiments were developed.
 CN is a separate local course project, not previously published, imported from

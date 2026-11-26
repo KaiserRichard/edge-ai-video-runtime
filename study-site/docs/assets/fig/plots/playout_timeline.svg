@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" font-family="Segoe UI, Arial, sans-serif" font-size="12">
+  <rect width="720" height="260" fill="#ffffff"/>
+  <text x="30" y="22" font-size="15" font-weight="bold" fill="#1a1a1a">Playout buffer: every frame gets a deadline; a frame that completes after it is "late"</text>
+  <!-- lanes -->
+  <text x="30" y="78" fill="#333">frame complete</text>
+  <text x="30" y="92" fill="#333">at receiver</text>
+  <text x="30" y="158" fill="#333">playout</text>
+  <text x="30" y="172" fill="#333">deadline</text>
+  <line x1="130" y1="85" x2="700" y2="85" stroke="#bbb"/>
+  <line x1="130" y1="165" x2="700" y2="165" stroke="#bbb"/>
+  <!-- deadlines: 220 + 110k -->
+  <g stroke="#1f4e79" stroke-width="3">
+    <line x1="220" y1="150" x2="220" y2="180"/><line x1="330" y1="150" x2="330" y2="180"/>
+    <line x1="440" y1="150" x2="440" y2="180"/><line x1="550" y1="150" x2="550" y2="180"/>
+    <line x1="660" y1="150" x2="660" y2="180"/>
+  </g>
+  <g fill="#1f4e79" text-anchor="middle" font-size="11">
+    <text x="220" y="196">frame 0</text><text x="330" y="196">frame 1</text><text x="440" y="196">frame 2</text>
+    <text x="550" y="196">frame 3</text><text x="660" y="196">frame 4</text>
+  </g>
+  <!-- arrivals -->
+  <g stroke-width="1.5" fill="none">
+    <line x1="150" y1="85" x2="220" y2="150" stroke="#2e8b3d"/>
+    <line x1="275" y1="85" x2="330" y2="150" stroke="#2e8b3d"/>
+    <line x1="410" y1="85" x2="440" y2="150" stroke="#2e8b3d"/>
+    <line x1="558" y1="85" x2="550" y2="150" stroke="#c0392b" stroke-dasharray="5 3"/>
+    <line x1="600" y1="85" x2="660" y2="150" stroke="#2e8b3d"/>
+  </g>
+  <g>
+    <circle cx="150" cy="85" r="6" fill="#2e8b3d"/><circle cx="275" cy="85" r="6" fill="#2e8b3d"/>
+    <circle cx="410" cy="85" r="6" fill="#2e8b3d"/><circle cx="558" cy="85" r="6" fill="#c0392b"/>
+    <circle cx="600" cy="85" r="6" fill="#2e8b3d"/>
+  </g>
+  <text x="558" y="68" text-anchor="middle" fill="#c0392b" font-weight="bold">late</text>
+  <!-- D brace -->
+  <line x1="150" y1="118" x2="220" y2="118" stroke="#555"/>
+  <line x1="150" y1="92" x2="150" y2="124" stroke="#555" stroke-dasharray="3 3"/>
+  <line x1="220" y1="112" x2="220" y2="150" stroke="#555" stroke-dasharray="3 3"/>
+  <text x="185" y="134" text-anchor="middle" fill="#333">D</text>
+  <text x="150" y="60" text-anchor="middle" fill="#333" font-size="11">t0 (first arrival)</text>
+  <!-- T brace -->
+  <line x1="220" y1="212" x2="330" y2="212" stroke="#555"/>
+  <text x="275" y="228" text-anchor="middle" fill="#333">1 / fps</text>
+  <text x="30" y="250" fill="#333">Deadlines are evenly spaced (media clock). Arrivals are not (network jitter). A bigger D moves every deadline right: fewer late frames, more delay.</text>
+</svg>

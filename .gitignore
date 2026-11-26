@@ -115,3 +115,6 @@ slprj/
 # Raw UART captures are evidence, not compiled firmware.
 !**/results/**/capture/uart.bin
 *.pid
+
+# study site build output
+study-site/site/

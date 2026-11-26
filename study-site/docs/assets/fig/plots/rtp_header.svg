@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" font-family="Segoe UI, Arial, sans-serif" font-size="12">
+  <rect width="720" height="330" fill="#ffffff"/>
+  <text x="40" y="22" font-size="15" font-weight="bold" fill="#1a1a1a">One real RTP packet from the project (first packet of frame 0, run T3/loss5/run1)</text>
+  <!-- bit ruler -->
+  <g fill="#555" font-size="11" text-anchor="middle">
+    <text x="50" y="50">0</text><text x="210" y="50">8</text><text x="370" y="50">16</text><text x="530" y="50">24</text><text x="670" y="50">31</text>
+    <text x="700" y="50" text-anchor="start">bit</text>
+  </g>
+  <!-- row 1 -->
+  <g stroke="#1f4e79" stroke-width="1.2" fill="#dbe9f6">
+    <rect x="40" y="56" width="40" height="46"/>
+    <rect x="80" y="56" width="20" height="46"/>
+    <rect x="100" y="56" width="20" height="46"/>
+    <rect x="120" y="56" width="80" height="46"/>
+    <rect x="200" y="56" width="20" height="46" fill="#ffe2b8"/>
+    <rect x="220" y="56" width="140" height="46"/>
+    <rect x="360" y="56" width="320" height="46" fill="#cfead0"/>
+    <rect x="40" y="102" width="640" height="46" fill="#cfead0"/>
+    <rect x="40" y="148" width="640" height="46"/>
+  </g>
+  <g fill="#1a1a1a" text-anchor="middle">
+    <text x="60" y="74">V</text><text x="90" y="74">P</text><text x="110" y="74">X</text><text x="160" y="74">CC</text>
+    <text x="210" y="74">M</text><text x="290" y="74">PT (payload type)</text><text x="520" y="74">sequence number (16 bits)</text>
+    <text x="360" y="120">timestamp (32 bits, 90 kHz clock)</text>
+    <text x="360" y="166">SSRC (32 bits, who is sending)</text>
+  </g>
+  <g fill="#7a1f1f" text-anchor="middle" font-family="Consolas, monospace" font-size="13">
+    <text x="60" y="94">2</text><text x="90" y="94">0</text><text x="110" y="94">0</text><text x="160" y="94">0</text>
+    <text x="210" y="94">0</text><text x="290" y="94">96</text><text x="520" y="94">31318</text>
+    <text x="360" y="140">1546568660</text>
+    <text x="360" y="186">2060980022</text>
+  </g>
+  <!-- payload -->
+  <rect x="40" y="194" width="640" height="40" fill="#f3e3f7" stroke="#6a3d7c" stroke-width="1.2"/>
+  <text x="360" y="218" text-anchor="middle" fill="#1a1a1a">project payload header, 8 bytes (frame id, fragment offset, total length)</text>
+  <rect x="40" y="234" width="640" height="40" fill="#f0f0f0" stroke="#666" stroke-width="1.2"/>
+  <text x="360" y="258" text-anchor="middle" fill="#1a1a1a">JPEG bytes of this fragment (up to 1192 bytes)</text>
+  <!-- braces -->
+  <text x="690" y="130" fill="#1f4e79" font-size="11" transform="rotate(90 690 130)" text-anchor="middle">12-byte RTP header</text>
+  <text x="690" y="236" fill="#6a3d7c" font-size="11" transform="rotate(90 690 236)" text-anchor="middle">1200 B payload</text>
+  <text x="40" y="296" fill="#333">Blue = fixed fields. Green = fields that change per packet or per frame. Orange = marker bit (1 only on the last packet of a frame).</text>
+  <text x="40" y="314" fill="#333">Red numbers are the logged values. Whole packet on the wire: 12 + 1200 = 1212 bytes.</text>
+</svg>
